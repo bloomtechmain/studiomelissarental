@@ -56,8 +56,8 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-4">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
           <input
             value={query}

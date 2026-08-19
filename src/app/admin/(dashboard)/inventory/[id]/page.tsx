@@ -78,6 +78,8 @@ export default async function AdminItemDetailPage({
               description: m.description,
               resolved: m.resolved,
               resolvedBy: m.resolvedBy,
+              createdAt: m.createdAt,
+              resolvedAt: m.resolvedAt,
             })),
           }))}
         />

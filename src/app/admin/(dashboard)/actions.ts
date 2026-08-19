@@ -537,7 +537,7 @@ export async function updateUnitStatus(unitId: string, itemId: string, status: U
 
 export async function addMaintenanceLog(unitId: string, itemId: string, description: string) {
   const session = await requireSession();
-  requirePermission(session, "inventory:units:write");
+  requirePermission(session, "maintenance:flag");
   await prisma.$transaction([
     prisma.maintenanceLog.create({ data: { unitId, description } }),
     prisma.equipmentUnit.update({ where: { id: unitId }, data: { status: "MAINTENANCE" } }),

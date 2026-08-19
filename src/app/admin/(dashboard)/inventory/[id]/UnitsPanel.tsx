@@ -11,6 +11,7 @@ import {
   resolveMaintenanceLog,
 } from "../../actions";
 import type { UnitStatus } from "@prisma/client";
+import { format } from "date-fns";
 import { ChevronDown, ChevronUp, Trash2, Wrench } from "lucide-react";
 
 type MaintenanceLog = {
@@ -18,6 +19,8 @@ type MaintenanceLog = {
   description: string;
   resolved: boolean;
   resolvedBy: string | null;
+  createdAt: Date;
+  resolvedAt: Date | null;
 };
 
 type Unit = {
@@ -169,6 +172,9 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
               {openLog ? (
                 <div className="mt-2 rounded-lg bg-amber/10 px-3 py-2 text-sm">
                   <p className="text-amber-deep">Maintenance: {openLog.description}</p>
+                  <p className="text-xs text-amber-deep/70">
+                    Flagged {format(openLog.createdAt, "MMM d, yyyy")}
+                  </p>
                   <button
                     disabled={pending}
                     onClick={() => handleResolve(openLog.id, unit.id)}
@@ -206,7 +212,9 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
                       .filter((m) => m.resolved)
                       .map((m) => (
                         <li key={m.id}>
-                          {m.description} — resolved by {m.resolvedBy}
+                          {format(m.createdAt, "MMM d, yyyy")} — {m.description} — resolved by{" "}
+                          {m.resolvedBy}
+                          {m.resolvedAt && ` on ${format(m.resolvedAt, "MMM d, yyyy")}`}
                         </li>
                       ))}
                   </ul>

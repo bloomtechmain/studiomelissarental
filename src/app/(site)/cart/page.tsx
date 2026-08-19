@@ -58,28 +58,38 @@ export default function CartPage() {
   const [confirmationId, setConfirmationId] = useState<string | null>(null);
   const [signatureResult, setSignatureResult] = useState<SignatureResult | null>(null);
 
+  // Debounced + merged rather than replaced: without this, every single +/-
+  // click (which changes cart.lines identity) fires an immediate re-check of
+  // every line, and briefly wiping the availability numbers while it's in
+  // flight made every item's "available" text flicker out and back in
+  // together — including items nobody touched. Keeping the previous values
+  // visible until fresh ones land removes the pop; the debounce means
+  // rapid-fire clicks only trigger one check, not one per click.
   useEffect(() => {
     if (cart.lines.length === 0) return;
     let cancelled = false;
-    setChecking(true);
 
-    Promise.all(
-      cart.lines.map((l) =>
-        fetch(`/api/availability?itemId=${l.itemId}&date=${date}&slot=${slot}`)
-          .then((r) => r.json())
-          .then((data) => [l.itemId, data.available ?? 0] as const)
+    const timer = setTimeout(() => {
+      setChecking(true);
+      Promise.all(
+        cart.lines.map((l) =>
+          fetch(`/api/availability?itemId=${l.itemId}&date=${date}&slot=${slot}`)
+            .then((r) => r.json())
+            .then((data) => [l.itemId, data.available ?? 0] as const)
+        )
       )
-    )
-      .then((results) => {
-        if (cancelled) return;
-        setAvailability(Object.fromEntries(results));
-      })
-      .finally(() => {
-        if (!cancelled) setChecking(false);
-      });
+        .then((results) => {
+          if (cancelled) return;
+          setAvailability((prev) => ({ ...prev, ...Object.fromEntries(results) }));
+        })
+        .finally(() => {
+          if (!cancelled) setChecking(false);
+        });
+    }, 350);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [cart.lines, date, slot]);
 
@@ -314,8 +324,12 @@ export default function CartPage() {
                   <p className="font-semibold text-navy">{line.name}</p>
                   <p className="text-sm text-steel">
                     ${line.dailyRate.toFixed(0)} / rental
-                    {!checking && available !== undefined && (
-                      <span className={`ml-2 ${ok ? "text-signal" : "text-amber-deep"}`}>
+                    {available !== undefined && (
+                      <span
+                        className={`ml-2 transition-opacity ${checking ? "opacity-50" : ""} ${
+                          ok ? "text-signal" : "text-amber-deep"
+                        }`}
+                      >
                         {ok ? `${available} available` : `only ${available} available`}
                       </span>
                     )}

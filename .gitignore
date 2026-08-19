@@ -42,3 +42,7 @@ next-env.d.ts
 
 # uploaded contract files — never committed, contains customer PII
 /uploads/
+
+# internal notes — not for the repo
+/PROGRESS.md
+/2026.08.18 worklog.md

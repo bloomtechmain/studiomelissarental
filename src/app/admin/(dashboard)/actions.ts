@@ -7,8 +7,9 @@ import { requirePermission } from "@/lib/permissions";
 import { setGlobalBufferHours, setBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
 import { saveAgreementFile, saveItemPhoto } from "@/lib/uploads";
-import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
-import { slotWindow, type SlotKey } from "@/lib/slots";
+import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
+import { BookingConflictError } from "@/lib/booking";
+import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import type { BookingStatus, UnitStatus, PaymentMethod, Role } from "@prisma/client";
@@ -251,6 +252,101 @@ export async function rescheduleBooking(
 
   revalidatePath("/admin/bookings");
   revalidatePath(`/admin/bookings/${bookingId}`);
+  revalidatePath("/admin/calendar");
+  revalidatePath("/admin/equipment-timeline");
+  return { ok: true };
+}
+
+// --- Pull-sheet unit swap ---------------------------------------------------
+// Spec: "Staff can swap an assigned unit for another of the same category
+// before delivery (e.g. a unit needs maintenance) without breaking the
+// booking." Package templates bind to a specific Item (not an abstract
+// category — see PackageItem), so "same category" in practice means "same
+// Item" — a swap candidate must be another unit of the exact item this
+// BookingUnit row was assigned for.
+
+// Read-only, so it only requires being logged in — same as loading the
+// booking page itself; the mutation below is what's actually permission-gated.
+export async function getSwapCandidates(
+  bookingUnitId: string
+): Promise<{ id: string; serialNumber: string }[]> {
+  await requireSession();
+
+  const bookingUnit = await prisma.bookingUnit.findUniqueOrThrow({
+    where: { id: bookingUnitId },
+    include: { unit: true, booking: true },
+  });
+
+  const dateStr = toDateStr(bookingUnit.booking.date);
+  const { availableUnitIds } = await getAvailability(
+    bookingUnit.unit.itemId,
+    dateStr,
+    bookingUnit.booking.slot
+  );
+  if (availableUnitIds.length === 0) return [];
+
+  const candidates = await prisma.equipmentUnit.findMany({
+    where: { id: { in: availableUnitIds } },
+    orderBy: { serialNumber: "asc" },
+    select: { id: true, serialNumber: true },
+  });
+  return candidates;
+}
+
+export type SwapUnitResult = { ok: true } | { ok: false; error: string };
+
+export async function swapBookingUnit(
+  bookingUnitId: string,
+  newUnitId: string
+): Promise<SwapUnitResult> {
+  const session = await requireSession();
+  requirePermission(session, "bookings:units:write");
+
+  const bookingUnit = await prisma.bookingUnit.findUniqueOrThrow({
+    where: { id: bookingUnitId },
+    include: { unit: true, booking: true },
+  });
+
+  // "Before delivery" — once equipment is actually out, a swap isn't a paper
+  // reassignment anymore, it's a real logistics problem staff need to solve
+  // by hand (and Cancelled/Completed bookings shouldn't have units touched).
+  if (!["PENDING", "CONFIRMED"].includes(bookingUnit.booking.status)) {
+    return { ok: false, error: "This booking's equipment has already gone out — swap isn't available after delivery." };
+  }
+
+  const newUnit = await prisma.equipmentUnit.findUnique({ where: { id: newUnitId } });
+  if (!newUnit || newUnit.itemId !== bookingUnit.unit.itemId) {
+    return { ok: false, error: "The replacement unit must be the same item." };
+  }
+  if (!["AVAILABLE", "OUT"].includes(newUnit.status)) {
+    return { ok: false, error: "That unit isn't eligible for booking (in maintenance or retired)." };
+  }
+
+  try {
+    await prisma.bookingUnit.update({ where: { id: bookingUnitId }, data: { unitId: newUnitId } });
+  } catch (err) {
+    // Exactly the detection logic lib/booking.ts already uses for the same
+    // BookingUnit EXCLUDE constraint — the availability check above can
+    // still lose a race to a concurrent request between check and update.
+    const isExclusionViolation =
+      (err instanceof Prisma.PrismaClientKnownRequestError &&
+        (err.code === "23505" || err.meta?.code === "23P01")) ||
+      (err instanceof Error && /exclusion constraint/i.test(err.message));
+    if (isExclusionViolation) {
+      return { ok: false, error: new BookingConflictError().message };
+    }
+    throw err;
+  }
+
+  await logAudit({
+    entity: "Booking",
+    entityId: bookingUnit.bookingId,
+    action: "unit_swapped",
+    detail: `Swapped ${bookingUnit.unit.serialNumber} for ${newUnit.serialNumber}`,
+    actorId: session.id,
+  });
+
+  revalidatePath(`/admin/bookings/${bookingUnit.bookingId}`);
   revalidatePath("/admin/calendar");
   revalidatePath("/admin/equipment-timeline");
   return { ok: true };

@@ -8,6 +8,7 @@ import AgreementPanel from "./AgreementPanel";
 import ChargesPanel from "./ChargesPanel";
 import RefundPanel from "./RefundPanel";
 import RescheduleForm from "./RescheduleForm";
+import SwapUnitControl from "./SwapUnitControl";
 import { getBookingFeePercent } from "@/lib/settings";
 import { computeCancellationRefund } from "@/lib/cancellation";
 
@@ -180,6 +181,7 @@ export default async function AdminBookingDetailPage({
             <tr>
               <th className="py-1">Item</th>
               <th className="py-1">Serial number</th>
+              <th className="py-1"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -187,11 +189,17 @@ export default async function AdminBookingDetailPage({
               <tr key={bu.id}>
                 <td className="py-1.5 text-navy">{bu.unit.item.name}</td>
                 <td className="py-1.5 text-steel">{bu.unit.serialNumber}</td>
+                <td className="py-1.5 text-right">
+                  <SwapUnitControl
+                    bookingUnitId={bu.id}
+                    canSwap={["PENDING", "CONFIRMED"].includes(booking.status)}
+                  />
+                </td>
               </tr>
             ))}
             {booking.units.length === 0 && (
               <tr>
-                <td colSpan={2} className="py-3 text-steel">
+                <td colSpan={3} className="py-3 text-steel">
                   No units assigned.
                 </td>
               </tr>

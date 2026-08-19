@@ -12,6 +12,7 @@ export type Permission =
   | "leads:write"
   | "quotes:write"
   | "inventory:units:write" // unit status, new units, maintenance logs
+  | "bookings:units:write" // swap which serial-numbered unit is assigned to a booking — pull-sheet mechanics, not pricing, so both bookings and warehouse staff get it
   | "inventory:catalog:write" // categories, items, pricing
   | "packages:write" // package composition & pricing
   | "addons:write"
@@ -31,6 +32,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "leads:write",
     "quotes:write",
     "inventory:units:write",
+    "bookings:units:write",
     "inventory:catalog:write",
     "packages:write",
     "addons:write",
@@ -47,10 +49,11 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "customers:write",
     "leads:write",
     "quotes:write",
+    "bookings:units:write",
   ],
   // Staff — Warehouse/Ops: view bookings and pull sheets, update equipment
   // status. Cannot edit pricing or customer financial info.
-  STAFF_WAREHOUSE: ["inventory:units:write"],
+  STAFF_WAREHOUSE: ["inventory:units:write", "bookings:units:write"],
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {

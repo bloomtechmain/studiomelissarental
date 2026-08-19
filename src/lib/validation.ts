@@ -17,6 +17,10 @@ const bookingCommonSchema = {
   eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
   customer: customerInputSchema,
+  // Section 3.6: online bookings must be e-signed at checkout — this is the
+  // typed name; the hash/IP/timestamp are computed server-side, never
+  // trusted from the client.
+  signatureName: z.string().trim().min(1, "Type your name to sign the rental agreement").max(200),
 };
 
 export const itemBookingSchema = z.object({

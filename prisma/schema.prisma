@@ -213,6 +213,15 @@ model Booking {
   agreementSignedAt   DateTime?
   agreementOverridden Boolean   @default(false)
 
+  // E-signature evidence, captured when a customer signs online at checkout
+  // (as opposed to the staff-side checkbox/upload path above, which both
+  // still set agreementSigned/agreementSignedAt — this is supplementary,
+  // not a replacement). Hash/IP are computed server-side at booking
+  // creation, never trusted from the client.
+  signatureName String?
+  signatureHash String?
+  signatureIp   String?
+
   // Same idea for the two payment-gated transitions (3.4): Confirmed
   // requires the non-refundable booking fee to be on record, Paid in full
   // requires the full balance — both overridable by an admin, tracked here.

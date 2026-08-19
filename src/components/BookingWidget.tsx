@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { SLOTS, type SlotKey } from "@/lib/slots";
-import { CalendarDays, CheckCircle2, Loader2, PartyPopper, Sun, Moon } from "lucide-react";
+import RentalAgreementText from "@/components/RentalAgreementText";
+import SignatureBlock from "@/components/SignatureBlock";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  CreditCard,
+  Loader2,
+  PartyPopper,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 type Target =
   | { kind: "item"; itemId: string; itemName: string; maxQuantity: number }
@@ -16,6 +28,8 @@ type PackageAvailabilityLine = {
   ok: boolean;
 };
 
+type SignatureResult = { name: string; hash: string; ip: string; signedAt: string };
+
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -28,6 +42,8 @@ const fieldClass =
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function BookingWidget({ target }: { target: Target }) {
+  const [step, setStep] = useState<"form" | "review" | "done">("form");
+
   const [date, setDate] = useState(todayStr());
   const [slot, setSlot] = useState<SlotKey>("MORNING");
   const [quantity, setQuantity] = useState(1);
@@ -44,10 +60,12 @@ export default function BookingWidget({ target }: { target: Target }) {
   const [eventName, setEventName] = useState("");
   const [eventAddress, setEventAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [signatureName, setSignatureName] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{ id: string } | null>(null);
+  const [signatureResult, setSignatureResult] = useState<SignatureResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,8 +105,17 @@ export default function BookingWidget({ target }: { target: Target }) {
     return pkgBookable === true;
   }, [target, itemAvailable, quantity, pkgBookable]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleContinueToReview(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+    setStep("review");
+  }
+
+  async function handleSignAndSubmit() {
+    if (!signatureName.trim()) {
+      setError("Type your name to sign the rental agreement.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
@@ -104,6 +131,7 @@ export default function BookingWidget({ target }: { target: Target }) {
             eventAddress,
             notes,
             customer: { name, email, phone, org },
+            signatureName: signatureName.trim(),
           }
         : {
             kind: "package" as const,
@@ -114,6 +142,7 @@ export default function BookingWidget({ target }: { target: Target }) {
             eventAddress,
             notes,
             customer: { name, email, phone, org },
+            signatureName: signatureName.trim(),
           };
 
     try {
@@ -128,6 +157,15 @@ export default function BookingWidget({ target }: { target: Target }) {
         return;
       }
       setConfirmation({ id: data.id });
+      if (data.signature) {
+        setSignatureResult({
+          name: data.signature.name,
+          hash: data.signature.hash,
+          ip: data.signature.ip,
+          signedAt: data.signature.signedAt,
+        });
+      }
+      setStep("done");
     } catch {
       setError("Network error — please try again.");
     } finally {
@@ -135,7 +173,7 @@ export default function BookingWidget({ target }: { target: Target }) {
     }
   }
 
-  if (confirmation) {
+  if (step === "done" && confirmation) {
     return (
       <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-signal-light/50 text-signal">
@@ -154,13 +192,111 @@ export default function BookingWidget({ target }: { target: Target }) {
           It&apos;s pending confirmation — our team will reach out shortly to confirm details and
           collect the booking fee.
         </p>
+
+        {signatureResult && (
+          <div className="mt-4">
+            <SignatureBlock
+              name={signatureResult.name}
+              hash={signatureResult.hash}
+              ip={signatureResult.ip}
+              signedAt={format(new Date(signatureResult.signedAt), "MMM d, yyyy 'at' h:mm a")}
+            />
+          </div>
+        )}
+
+        <div className="mt-5 rounded-lg border border-dashed border-line bg-paper/60 p-4">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-navy">
+            <CreditCard className="h-4 w-4 text-steel" /> Payment
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-steel">
+            Online payment isn&apos;t live yet — our team will follow up to collect the booking fee.
+          </p>
+          <button
+            type="button"
+            disabled
+            className="mt-3 w-full cursor-not-allowed rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-steel opacity-60"
+          >
+            Continue to payment (coming soon)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "review") {
+    return (
+      <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setStep("form")}
+          className="flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Back
+        </button>
+
+        <h3 className="mt-3 font-display text-lg font-semibold text-navy">
+          Review &amp; sign the rental agreement
+        </h3>
+        <p className="mt-1 text-sm text-steel">
+          Please review the agreement below, then type your name to sign it electronically.
+        </p>
+
+        <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
+          <RentalAgreementText
+            renterName={name}
+            org={org}
+            phone={phone}
+            email={email}
+            eventName={eventName}
+            eventAddress={eventAddress}
+            packageOrItemLabel={
+              target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName
+            }
+            deliveryLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
+              SLOTS[slot].label.split(" – ")[0].trim()
+            }`}
+            pickupLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
+              SLOTS[slot].label.split(" – ")[1].trim()
+            }`}
+          />
+        </div>
+
+        <label className="mt-5 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+          Type your full legal name to sign
+          <input
+            value={signatureName}
+            onChange={(e) => setSignatureName(e.target.value)}
+            placeholder="Your full name"
+            className={fieldClass}
+          />
+        </label>
+
+        {signatureName.trim() && (
+          <div className="mt-3 rounded-xl border border-line bg-paper/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
+            <p className="font-signature mt-1 text-3xl leading-tight text-navy">
+              {signatureName.trim()}
+            </p>
+          </div>
+        )}
+
+        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+
+        <button
+          type="button"
+          disabled={submitting || !signatureName.trim()}
+          onClick={handleSignAndSubmit}
+          className="mt-5 w-full rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+        >
+          {submitting ? "Submitting…" : "Sign agreement & continue"}
+        </button>
       </div>
     );
   }
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleContinueToReview}
       className="flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm"
     >
       <div>
@@ -337,10 +473,10 @@ export default function BookingWidget({ target }: { target: Target }) {
 
       <button
         type="submit"
-        disabled={!canSubmit || submitting || checking}
+        disabled={!canSubmit || checking}
         className="rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
       >
-        {submitting ? "Submitting…" : "Request booking"}
+        Continue to review &amp; sign
       </button>
     </form>
   );

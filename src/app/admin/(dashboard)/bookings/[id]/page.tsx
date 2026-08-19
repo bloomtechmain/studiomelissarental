@@ -128,6 +128,9 @@ export default async function AdminBookingDetailPage({
           insuranceOnFile={booking.insuranceOnFile}
           agreementFileUrl={booking.agreementFileUrl}
           agreementFileName={booking.agreementFileName}
+          signatureName={booking.signatureName}
+          signatureHash={booking.signatureHash}
+          signatureIp={booking.signatureIp}
         />
 
         <ChecklistPanel

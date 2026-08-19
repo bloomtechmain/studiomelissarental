@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { updateAgreementStatus, updateInsuranceStatus, uploadAgreementFile } from "../../actions";
 import { FileCheck2, ShieldCheck, Upload, FileText } from "lucide-react";
 import { format } from "date-fns";
+import SignatureBlock from "@/components/SignatureBlock";
 
 export default function AgreementPanel({
   bookingId,
@@ -14,6 +15,9 @@ export default function AgreementPanel({
   insuranceOnFile,
   agreementFileUrl,
   agreementFileName,
+  signatureName,
+  signatureHash,
+  signatureIp,
 }: {
   bookingId: string;
   agreementSigned: boolean;
@@ -22,6 +26,9 @@ export default function AgreementPanel({
   insuranceOnFile: boolean;
   agreementFileUrl: string | null;
   agreementFileName: string | null;
+  signatureName: string | null;
+  signatureHash: string | null;
+  signatureIp: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -88,6 +95,17 @@ export default function AgreementPanel({
           )}
         </span>
       </label>
+
+      {signatureName && signatureHash && signatureIp && (
+        <div className="mt-3">
+          <SignatureBlock
+            name={signatureName}
+            hash={signatureHash}
+            ip={signatureIp}
+            signedAt={agreementSignedAt ? format(agreementSignedAt, "MMM d, yyyy 'at' h:mm a") : undefined}
+          />
+        </div>
+      )}
 
       <div className="mt-3 pl-6">
         {agreementFileUrl ? (

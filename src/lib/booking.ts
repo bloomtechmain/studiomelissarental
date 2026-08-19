@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow } from "@/lib/slots";
+import { generateSignatureHash } from "@/lib/signature";
+import { randomBytes } from "crypto";
 import type { BookingInput } from "@/lib/validation";
 import { Prisma } from "@prisma/client";
 
@@ -51,8 +53,25 @@ async function resolveCustomer(
   });
 }
 
-export async function createBooking(input: BookingInput) {
+export async function createBooking(input: BookingInput, signerIp: string) {
   const { startAt, endAt } = slotWindow(input.date, input.slot);
+
+  // Same signature evidence regardless of which branch below actually
+  // creates the booking — computed once so both stay identical.
+  const signedAt = new Date();
+  const signatureHash = generateSignatureHash({
+    name: input.signatureName,
+    ip: signerIp,
+    timestamp: signedAt,
+    bookingSeed: randomBytes(8).toString("hex"),
+  });
+  const signatureFields = {
+    agreementSigned: true,
+    agreementSignedAt: signedAt,
+    signatureName: input.signatureName,
+    signatureHash,
+    signatureIp: signerIp,
+  };
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -70,6 +89,7 @@ export async function createBooking(input: BookingInput) {
             slot: input.slot,
             startAt,
             endAt,
+            ...signatureFields,
             lines: {
               create: [{ itemId: item.id, quantity: input.quantity }],
             },
@@ -108,6 +128,7 @@ export async function createBooking(input: BookingInput) {
           slot: input.slot,
           startAt,
           endAt,
+          ...signatureFields,
           lines: {
             create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })),
           },

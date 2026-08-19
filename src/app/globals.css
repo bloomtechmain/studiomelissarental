@@ -31,6 +31,7 @@
   --color-foreground: var(--foreground);
   --font-display: var(--font-sora);
   --font-sans: var(--font-inter);
+  --font-signature: var(--font-signature);
 }
 
 body {

@@ -66,9 +66,15 @@ export default async function PackagePage({ params }: { params: Promise<{ id: st
                 Request a quote
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-steel">
-                The Field tier is a custom, per-event build. Give us a call or email so we can
-                scope it with you — this tier isn&apos;t available for instant online booking.
+                The {pkg.name} tier is a custom, per-event build — tell us about it and we&apos;ll
+                scope it with you. This tier isn&apos;t available for instant online booking.
               </p>
+              <Link
+                href={`/quote?tier=${encodeURIComponent(pkg.name)}`}
+                className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-full bg-amber px-6 py-3 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.98]"
+              >
+                Request a quote
+              </Link>
             </div>
           ) : (
             <BookingWidget target={{ kind: "package", packageId: pkg.id, packageName: pkg.name }} />

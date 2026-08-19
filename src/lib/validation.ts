@@ -43,3 +43,25 @@ export const loginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
 });
+
+export const leadInputSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required").max(200),
+    email: z.string().trim().email().max(200).optional().or(z.literal("")),
+    phone: z.string().trim().max(50).optional().or(z.literal("")),
+    org: z.string().trim().max(200).optional().or(z.literal("")),
+    eventDate: dateStrSchema.optional().or(z.literal("")),
+    roomSize: z.string().trim().max(200).optional().or(z.literal("")),
+    guestCount: z.coerce.number().int().min(0).max(100000).optional(),
+    recommendedTier: z.string().trim().max(100).optional().or(z.literal("")),
+    eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
+    notes: z.string().trim().max(2000).optional().or(z.literal("")),
+    // honeypot — real visitors never see or fill this field
+    website: z.string().max(200).optional().or(z.literal("")),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: "Provide an email or phone number so we can reach you.",
+    path: ["email"],
+  });
+
+export type LeadInput = z.infer<typeof leadInputSchema>;

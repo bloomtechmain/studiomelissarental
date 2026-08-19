@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Volume2, Package, MapPin, ChevronRight } from "lucide-react";
+import { Volume2, Package, MapPin, ChevronRight, MessageSquareText } from "lucide-react";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +10,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="flex items-center">
             <Image src="/logo.png" alt="Studio Melissa Rental" width={148} height={61} priority />
           </Link>
-          <nav className="flex items-center gap-2.5">
+          <nav className="flex flex-wrap items-center justify-end gap-2.5">
             <Link
               href="/#packages"
               className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
@@ -24,6 +24,13 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             >
               <Volume2 className="h-3.5 w-3.5" strokeWidth={2.25} />
               Equipment
+            </Link>
+            <Link
+              href="/quote"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+            >
+              <MessageSquareText className="h-3.5 w-3.5" strokeWidth={2.25} />
+              Request a quote
             </Link>
           </nav>
         </div>
@@ -67,6 +74,15 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
                   Equipment catalog
+                  <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/quote"
+                  className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
+                >
+                  Request a quote
                   <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </Link>
               </li>

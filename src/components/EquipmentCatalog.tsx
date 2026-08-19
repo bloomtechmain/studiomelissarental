@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import AddToCartButton from "@/components/AddToCartButton";
 import {
   Search,
   ChevronRight,
@@ -120,31 +121,39 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {cat.items.map((item) => (
-                  <Link
+                  <div
                     key={item.id}
-                    href={`/items/${item.id}`}
-                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
+                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white p-5 transition-all duration-200 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-signal-light/50 text-signal transition-colors duration-200 group-hover:bg-signal group-hover:text-white">
-                        <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
-                      </span>
-                      <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold text-steel">
-                        {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                    <p className="mt-4 font-semibold text-navy">{item.name}</p>
+                    <Link href={`/items/${item.id}`} className="flex flex-col">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-signal-light/50 text-signal transition-colors duration-200 group-hover:bg-signal group-hover:text-white">
+                          <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
+                        </span>
+                        <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold text-steel">
+                          {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <p className="mt-4 flex items-center gap-1 font-semibold text-navy">
+                        {item.name}
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      </p>
+                    </Link>
 
-                    <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
+                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3">
                       <p className="font-display text-lg font-semibold text-navy">
                         ${item.dailyRate.toFixed(0)}
                         <span className="text-sm font-normal text-steel"> / rental</span>
                       </p>
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-paper text-steel transition-colors duration-200 group-hover:bg-signal-light/60 group-hover:text-signal">
-                        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                      </span>
+                      <AddToCartButton
+                        itemId={item.id}
+                        name={item.name}
+                        dailyRate={item.dailyRate}
+                        maxQuantity={item.unitCount}
+                        compact
+                      />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>

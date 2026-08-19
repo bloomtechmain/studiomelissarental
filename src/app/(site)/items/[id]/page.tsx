@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import BookingWidget from "@/components/BookingWidget";
-import { ChevronLeft } from "lucide-react";
+import AddToCartButton from "@/components/AddToCartButton";
+import { ChevronLeft, ShoppingCart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -50,14 +50,30 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           </p>
         </div>
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <BookingWidget
-            target={{
-              kind: "item",
-              itemId: item.id,
-              itemName: item.name,
-              maxQuantity: item.units.length,
-            }}
-          />
+          <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-signal-light/50 text-signal">
+              <ShoppingCart className="h-5 w-5" strokeWidth={2.25} />
+            </span>
+            <h3 className="mt-4 font-display text-lg font-semibold text-navy">Add to your order</h3>
+            <p className="mt-2 text-sm leading-relaxed text-steel">
+              Building a build with multiple items? Add this to your cart, keep browsing, and
+              check out everything together in one booking.
+            </p>
+            <div className="mt-5">
+              <AddToCartButton
+                itemId={item.id}
+                name={item.name}
+                dailyRate={Number(item.dailyRate)}
+                maxQuantity={item.units.length}
+              />
+            </div>
+            <Link
+              href="/cart"
+              className="mt-4 flex items-center justify-center gap-1.5 text-sm font-semibold text-signal hover:underline"
+            >
+              View cart &amp; check out →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

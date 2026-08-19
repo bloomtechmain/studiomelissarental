@@ -105,6 +105,42 @@ export async function createBooking(input: BookingInput, signerIp: string) {
         return booking;
       }
 
+      if (input.kind === "cart") {
+        // Defense in depth against a malformed/duplicated payload — the cart
+        // UI itself already keys lines by itemId, so this should be a no-op.
+        const merged = new Map<string, number>();
+        for (const line of input.lines) {
+          merged.set(line.itemId, (merged.get(line.itemId) ?? 0) + line.quantity);
+        }
+        const items = await tx.item.findMany({ where: { id: { in: [...merged.keys()] } } });
+        if (items.length !== merged.size) {
+          throw new Error("One or more items in the cart no longer exist.");
+        }
+
+        const booking = await tx.booking.create({
+          data: {
+            customerId: customer.id,
+            eventName: input.eventName || undefined,
+            eventAddress: input.eventAddress || undefined,
+            notes: input.notes || undefined,
+            date: new Date(`${input.date}T00:00:00`),
+            slot: input.slot,
+            startAt,
+            endAt,
+            ...signatureFields,
+            lines: {
+              create: [...merged.entries()].map(([itemId, quantity]) => ({ itemId, quantity })),
+            },
+          },
+        });
+
+        for (const [itemId, quantity] of merged) {
+          await assignUnits(tx, { bookingId: booking.id, itemId, dateStr: input.date, slot: input.slot, quantity });
+        }
+
+        return booking;
+      }
+
       // Package booking: one BookingLine per component, all assigned inside
       // the same transaction so it's all-or-nothing.
       const pkg = await tx.package.findUniqueOrThrow({

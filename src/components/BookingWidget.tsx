@@ -249,9 +249,9 @@ export default function BookingWidget({ target }: { target: Target }) {
             email={email}
             eventName={eventName}
             eventAddress={eventAddress}
-            packageOrItemLabel={
-              target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName
-            }
+            equipmentLines={[
+              target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName,
+            ]}
             deliveryLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
               SLOTS[slot].label.split(" – ")[0].trim()
             }`}

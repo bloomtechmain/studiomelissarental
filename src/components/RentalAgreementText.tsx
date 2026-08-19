@@ -9,7 +9,7 @@ export default function RentalAgreementText({
   email,
   eventName,
   eventAddress,
-  packageOrItemLabel,
+  equipmentLines,
   deliveryLabel,
   pickupLabel,
 }: {
@@ -19,7 +19,7 @@ export default function RentalAgreementText({
   email?: string;
   eventName?: string;
   eventAddress?: string;
-  packageOrItemLabel: string;
+  equipmentLines: string[];
   deliveryLabel: string;
   pickupLabel: string;
 }) {
@@ -55,7 +55,16 @@ export default function RentalAgreementText({
         <Field label="Phone / Email" value={[phone, email].filter(Boolean).join(" / ")} />
         <Field label="Event name / venue" value={eventName} />
         <Field label="Event address" value={eventAddress} />
-        <Field label="Equipment" value={packageOrItemLabel} />
+        <div className="flex justify-between gap-4 border-b border-line py-1.5 text-sm">
+          <span className="text-steel">Equipment</span>
+          <span className="text-right font-medium text-navy">
+            {equipmentLines.length > 0 ? (
+              equipmentLines.map((line, i) => <div key={i}>{line}</div>)
+            ) : (
+              <>—</>
+            )}
+          </span>
+        </div>
         <Field label="Delivery" value={deliveryLabel} />
         <Field label="Pickup" value={pickupLabel} />
         <Field label="Rental fee / deposit" value="To be confirmed by Studio Melissa Rental staff" />

@@ -36,9 +36,25 @@ export const packageBookingSchema = z.object({
   ...bookingCommonSchema,
 });
 
+// A cart checkout — multiple different items in one booking, as opposed to
+// itemBookingSchema's single item + quantity.
+export const cartBookingSchema = z.object({
+  kind: z.literal("cart"),
+  lines: z
+    .array(
+      z.object({
+        itemId: z.string().min(1),
+        quantity: z.coerce.number().int().min(1).max(50),
+      })
+    )
+    .min(1, "Add at least one item to the cart"),
+  ...bookingCommonSchema,
+});
+
 export const bookingInputSchema = z.discriminatedUnion("kind", [
   itemBookingSchema,
   packageBookingSchema,
+  cartBookingSchema,
 ]);
 
 export type BookingInput = z.infer<typeof bookingInputSchema>;

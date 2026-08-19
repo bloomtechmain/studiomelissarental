@@ -1,10 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Volume2, Package, MapPin, ChevronRight, MessageSquareText } from "lucide-react";
+import { CartProvider } from "@/components/CartProvider";
+import CartNavLink from "@/components/CartNavLink";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <CartProvider>
       <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center">
@@ -32,6 +34,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               <MessageSquareText className="h-3.5 w-3.5" strokeWidth={2.25} />
               Request a quote
             </Link>
+            <CartNavLink />
           </nav>
         </div>
       </header>
@@ -95,6 +98,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </p>
         </div>
       </footer>
-    </>
+    </CartProvider>
   );
 }

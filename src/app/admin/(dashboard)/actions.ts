@@ -58,6 +58,30 @@ export async function updateBookingStatus(
     actorId: session.id,
   });
 
+  // A booking traces back to its originating lead via the quote it was
+  // converted from (Quote.bookingId is unique — see convertQuoteToBooking).
+  // Completing the booking is the pipeline's terminal auto-advance, mirroring
+  // the QUOTE_SENT/BOOKING_CONFIRMED auto-advances in quotes/actions.ts.
+  if (status === "COMPLETED") {
+    const quote = await prisma.quote.findUnique({ where: { bookingId }, select: { leadId: true } });
+    if (quote?.leadId) {
+      const lead = await prisma.lead.findUnique({ where: { id: quote.leadId }, select: { stage: true } });
+      if (lead && lead.stage !== "COMPLETED" && lead.stage !== "LOST") {
+        await prisma.lead.update({ where: { id: quote.leadId }, data: { stage: "COMPLETED" } });
+        await prisma.leadActivity.create({
+          data: {
+            leadId: quote.leadId,
+            type: "note",
+            content: "Booking marked completed — opportunity closed as Completed",
+            staffId: session.id,
+          },
+        });
+        revalidatePath("/admin/leads");
+        revalidatePath(`/admin/leads/${quote.leadId}`);
+      }
+    }
+  }
+
   revalidatePath("/admin/bookings");
   revalidatePath(`/admin/bookings/${bookingId}`);
   revalidatePath("/admin/calendar");

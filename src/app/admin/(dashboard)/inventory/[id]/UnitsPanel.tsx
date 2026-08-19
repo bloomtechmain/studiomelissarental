@@ -4,13 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUnit,
+  deleteUnit,
   updateUnitStatus,
   updateUnitDetails,
   addMaintenanceLog,
   resolveMaintenanceLog,
 } from "../../actions";
 import type { UnitStatus } from "@prisma/client";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Wrench } from "lucide-react";
 
 type MaintenanceLog = {
   id: string;
@@ -32,6 +33,9 @@ type Unit = {
 
 const STATUS_OPTIONS: UnitStatus[] = ["AVAILABLE", "OUT", "MAINTENANCE", "RETIRED"];
 
+const fieldClass =
+  "rounded-lg border border-line px-2.5 py-1.5 text-sm transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
+
 export default function UnitsPanel({ itemId, units }: { itemId: string; units: Unit[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -41,6 +45,7 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
   const [purchaseDate, setPurchaseDate] = useState<Record<string, string>>({});
   const [purchaseCost, setPurchaseCost] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [deleteError, setDeleteError] = useState<Record<string, string>>({});
 
   function handleAddUnit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +53,18 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
     startTransition(async () => {
       await createUnit(itemId, serial.trim());
       setSerial("");
+      router.refresh();
+    });
+  }
+
+  function handleDelete(unitId: string) {
+    setDeleteError((prev) => ({ ...prev, [unitId]: "" }));
+    startTransition(async () => {
+      const result = await deleteUnit(unitId, itemId);
+      if (!result.ok) {
+        setDeleteError((prev) => ({ ...prev, [unitId]: result.error }));
+        return;
+      }
       router.refresh();
     });
   }
@@ -107,7 +124,7 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
           const openLog = unit.maintenance.find((m) => !m.resolved);
           const detailsOpen = Boolean(openDetails[unit.id]);
           return (
-            <div key={unit.id} className="rounded border border-line p-3">
+            <div key={unit.id} className="rounded-xl border border-line p-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-medium text-navy">{unit.serialNumber}</p>
@@ -117,22 +134,40 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
                     </span>
                   )}
                 </div>
-                <select
-                  value={unit.status}
-                  disabled={pending}
-                  onChange={(e) => handleStatusChange(unit.id, e.target.value as UnitStatus)}
-                  className="rounded border border-line px-2 py-1 text-sm"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s} disabled={s === "MAINTENANCE"}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={unit.status}
+                    disabled={pending}
+                    onChange={(e) => handleStatusChange(unit.id, e.target.value as UnitStatus)}
+                    className={fieldClass}
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s} disabled={s === "MAINTENANCE"}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => handleDelete(unit.id)}
+                    aria-label={`Delete unit ${unit.serialNumber}`}
+                    title="Delete unit"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-steel transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
+              {deleteError[unit.id] && (
+                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+                  {deleteError[unit.id]}
+                </p>
+              )}
+
               {openLog ? (
-                <div className="mt-2 rounded bg-amber/10 px-3 py-2 text-sm">
+                <div className="mt-2 rounded-lg bg-amber/10 px-3 py-2 text-sm">
                   <p className="text-amber-deep">Maintenance: {openLog.description}</p>
                   <button
                     disabled={pending}
@@ -143,20 +178,21 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
                   </button>
                 </div>
               ) : (
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2.5 flex gap-2">
                   <input
                     placeholder="Flag an issue…"
                     value={maintenanceNote[unit.id] ?? ""}
                     onChange={(e) =>
                       setMaintenanceNote((prev) => ({ ...prev, [unit.id]: e.target.value }))
                     }
-                    className="flex-1 rounded border border-line px-2 py-1 text-sm"
+                    className={`${fieldClass} flex-1 border-line`}
                   />
                   <button
-                    disabled={pending}
+                    disabled={pending || !maintenanceNote[unit.id]?.trim()}
                     onClick={() => handleFlagMaintenance(unit.id)}
-                    className="rounded border border-line px-3 py-1 text-xs font-semibold text-navy hover:border-signal"
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-signal px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
                   >
+                    <Wrench className="h-3 w-3" strokeWidth={2.5} />
                     Flag maintenance
                   </button>
                 </div>
@@ -180,21 +216,21 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
               <button
                 type="button"
                 onClick={() => toggleDetails(unit)}
-                className="mt-2 flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
+                className="mt-2.5 flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
               >
                 {detailsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 Purchase details &amp; notes
               </button>
 
               {detailsOpen && (
-                <div className="mt-2 grid grid-cols-2 gap-2 rounded bg-paper/60 p-2.5">
+                <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-paper/60 p-2.5">
                   <label className="flex flex-col gap-1 text-xs font-medium text-navy">
                     Purchase date
                     <input
                       type="date"
                       value={purchaseDate[unit.id] ?? ""}
                       onChange={(e) => setPurchaseDate((prev) => ({ ...prev, [unit.id]: e.target.value }))}
-                      className="rounded border border-line px-2 py-1 text-sm"
+                      className={fieldClass}
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs font-medium text-navy">
@@ -205,7 +241,7 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
                       step="0.01"
                       value={purchaseCost[unit.id] ?? ""}
                       onChange={(e) => setPurchaseCost((prev) => ({ ...prev, [unit.id]: e.target.value }))}
-                      className="rounded border border-line px-2 py-1 text-sm"
+                      className={fieldClass}
                     />
                   </label>
                   <label className="col-span-2 flex flex-col gap-1 text-xs font-medium text-navy">
@@ -214,14 +250,14 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
                       rows={2}
                       value={notes[unit.id] ?? ""}
                       onChange={(e) => setNotes((prev) => ({ ...prev, [unit.id]: e.target.value }))}
-                      className="rounded border border-line px-2 py-1 text-sm"
+                      className={fieldClass}
                     />
                   </label>
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => handleSaveDetails(unit.id)}
-                    className="col-span-2 w-fit rounded bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:brightness-110 disabled:opacity-50"
+                    className="col-span-2 w-fit rounded-lg bg-navy px-3.5 py-1.5 text-xs font-semibold text-white hover:brightness-110 disabled:opacity-50"
                   >
                     Save details
                   </button>
@@ -237,12 +273,12 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
           placeholder="New serial number"
           value={serial}
           onChange={(e) => setSerial(e.target.value)}
-          className="flex-1 rounded border border-line px-3 py-2 text-sm"
+          className={`${fieldClass} flex-1`}
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded bg-navy px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
+          className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
         >
           Add unit
         </button>

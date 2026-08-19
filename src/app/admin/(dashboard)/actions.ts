@@ -10,6 +10,7 @@ import { saveAgreementFile, saveItemPhoto } from "@/lib/uploads";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow, type SlotKey } from "@/lib/slots";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import type { BookingStatus, UnitStatus, PaymentMethod, Role } from "@prisma/client";
 
 // --- Bookings ------------------------------------------------------------
@@ -393,6 +394,42 @@ export async function updateUnitDetails(
     },
   });
   revalidatePath(`/admin/inventory/${itemId}`);
+}
+
+export type DeleteUnitResult = { ok: true } | { ok: false; error: string };
+
+// Deleting a unit with any booking/maintenance history would silently erase
+// part of that history (which past pull sheets pointed at this exact serial
+// number), so it's left to the DB's ON DELETE RESTRICT foreign keys to be
+// the real guard — this just turns that into a friendly message instead of
+// an unhandled 500. Retiring (status change) is the correct way to take a
+// unit with real history out of service; delete is for fixing mistakes like
+// a duplicate or mistyped entry that was never actually booked.
+export async function deleteUnit(unitId: string, itemId: string): Promise<DeleteUnitResult> {
+  const session = await requireSession();
+  requirePermission(session, "inventory:units:write");
+  try {
+    await prisma.equipmentUnit.delete({ where: { id: unitId } });
+  } catch (err) {
+    // A plain SQL-level ON DELETE RESTRICT (as opposed to a relation Prisma
+    // manages itself) doesn't reliably come through as the "known" P2003 —
+    // it can also surface as PrismaClientUnknownRequestError wrapping the
+    // raw Postgres restrict_violation. Check both error classes' messages
+    // for the constraint signature rather than trusting a single error code.
+    const message = err instanceof Error ? err.message : String(err);
+    const isForeignKeyRestrict =
+      (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") ||
+      /foreign key constraint|violates restrict/i.test(message);
+    if (isForeignKeyRestrict) {
+      return {
+        ok: false,
+        error: "Can't delete — this unit has booking or maintenance history. Use Retired status instead.",
+      };
+    }
+    throw err;
+  }
+  revalidatePath(`/admin/inventory/${itemId}`);
+  return { ok: true };
 }
 
 export async function updateUnitStatus(unitId: string, itemId: string, status: UnitStatus) {

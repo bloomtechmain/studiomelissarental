@@ -10,12 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminQuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [quote, customers] = await Promise.all([
+  const [quote, customers, addOns] = await Promise.all([
     prisma.quote.findUnique({
       where: { id },
       include: { lines: true, customer: true, lead: true, package: true },
     }),
     prisma.customer.findMany({ orderBy: { name: "asc" } }),
+    prisma.addOn.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
   ]);
   if (!quote) notFound();
 
@@ -61,6 +62,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
           }))}
           hasCustomer={Boolean(quote.customerId)}
           shareToken={quote.shareToken}
+          addOns={addOns.map((a) => ({ id: a.id, name: a.name, price: Number(a.price) }))}
         />
       </div>
 

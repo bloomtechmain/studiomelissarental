@@ -13,6 +13,7 @@ import type { QuoteStatus } from "@prisma/client";
 import { Trash2, Link2, Check, Copy } from "lucide-react";
 
 type Line = { id: string; description: string; quantity: number; unitPrice: number };
+type AddOn = { id: string; name: string; price: number };
 
 const STATUSES: QuoteStatus[] = ["DRAFT", "SENT", "ACCEPTED", "EXPIRED", "DECLINED"];
 
@@ -22,12 +23,14 @@ export default function QuoteEditor({
   lines,
   hasCustomer,
   shareToken,
+  addOns,
 }: {
   quoteId: string;
   status: QuoteStatus;
   lines: Line[];
   hasCustomer: boolean;
   shareToken: string | null;
+  addOns: AddOn[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -39,6 +42,14 @@ export default function QuoteEditor({
   const [token, setToken] = useState(shareToken);
   const [linkPending, setLinkPending] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  function applyAddOn(id: string) {
+    const addOn = addOns.find((a) => a.id === id);
+    if (addOn) {
+      setDesc(addOn.name);
+      setPrice(String(addOn.price));
+    }
+  }
 
   function handleAddLine() {
     if (!desc.trim()) return;
@@ -176,7 +187,22 @@ export default function QuoteEditor({
         </tfoot>
       </table>
 
-      <div className="mt-4 flex items-end gap-2 border-t border-line pt-4">
+      {addOns.length > 0 && (
+        <select
+          onChange={(e) => e.target.value && applyAddOn(e.target.value)}
+          defaultValue=""
+          className="mt-4 w-full rounded border border-line px-2 py-1.5 text-sm"
+        >
+          <option value="">Add from add-on list…</option>
+          {addOns.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name} — ${a.price.toFixed(2)}
+            </option>
+          ))}
+        </select>
+      )}
+
+      <div className="mt-2 flex items-end gap-2 border-t border-line pt-4">
         <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-navy">
           Description
           <input value={desc} onChange={(e) => setDesc(e.target.value)} className="rounded border border-line px-2 py-1.5 text-sm" />

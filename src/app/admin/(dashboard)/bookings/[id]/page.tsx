@@ -156,6 +156,7 @@ export default async function AdminBookingDetailPage({
             bookingId={booking.id}
             refundIssued={Number(booking.refundIssued)}
             refundNote={booking.refundNote}
+            refundedAt={booking.refundedAt}
             suggestedRefund={refund.totalRefund}
           />
         )}

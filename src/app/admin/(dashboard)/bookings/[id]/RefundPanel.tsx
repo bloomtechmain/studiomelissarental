@@ -2,17 +2,20 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { updateBookingRefund } from "../../actions";
 
 export default function RefundPanel({
   bookingId,
   refundIssued,
   refundNote,
+  refundedAt,
   suggestedRefund,
 }: {
   bookingId: string;
   refundIssued: number;
   refundNote: string | null;
+  refundedAt: Date | null;
   suggestedRefund: number;
 }) {
   const router = useRouter();
@@ -34,6 +37,9 @@ export default function RefundPanel({
   return (
     <form onSubmit={handleSave} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
       <h2 className="font-semibold text-navy">Refund issued</h2>
+      {refundedAt && (
+        <p className="mt-1 text-xs text-steel">Last recorded {format(refundedAt, "MMM d, yyyy")}</p>
+      )}
       <div className="mt-3 grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
           Amount refunded ($)

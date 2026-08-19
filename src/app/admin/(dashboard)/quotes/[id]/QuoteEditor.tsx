@@ -2,9 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addQuoteLine, removeQuoteLine, updateQuoteDetails, convertQuoteToBooking } from "../actions";
+import {
+  addQuoteLine,
+  removeQuoteLine,
+  updateQuoteDetails,
+  convertQuoteToBooking,
+  getOrCreateShareLink,
+} from "../actions";
 import type { QuoteStatus } from "@prisma/client";
-import { Trash2 } from "lucide-react";
+import { Trash2, Link2, Check, Copy } from "lucide-react";
 
 type Line = { id: string; description: string; quantity: number; unitPrice: number };
 
@@ -15,11 +21,13 @@ export default function QuoteEditor({
   status,
   lines,
   hasCustomer,
+  shareToken,
 }: {
   quoteId: string;
   status: QuoteStatus;
   lines: Line[];
   hasCustomer: boolean;
+  shareToken: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -28,6 +36,9 @@ export default function QuoteEditor({
   const [price, setPrice] = useState("0");
   const [convertError, setConvertError] = useState<string | null>(null);
   const [converted, setConverted] = useState<string | null>(null);
+  const [token, setToken] = useState(shareToken);
+  const [linkPending, setLinkPending] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   function handleAddLine() {
     if (!desc.trim()) return;
@@ -67,10 +78,59 @@ export default function QuoteEditor({
     });
   }
 
+  function handleGetLink() {
+    setLinkPending(true);
+    startTransition(async () => {
+      const t = await getOrCreateShareLink(quoteId);
+      setToken(t);
+      setLinkPending(false);
+    });
+  }
+
+  function handleCopy(url: string) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  const shareUrl = token && typeof window !== "undefined" ? `${window.location.origin}/q/${token}` : null;
   const total = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
 
   return (
     <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <div className="mb-5 flex items-center gap-2 rounded-lg border border-line bg-paper/60 px-3.5 py-3">
+        <Link2 className="h-4 w-4 shrink-0 text-signal" strokeWidth={2.25} />
+        {shareUrl ? (
+          <>
+            <input
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.target.select()}
+              className="min-w-0 flex-1 truncate bg-transparent text-sm text-navy outline-none"
+            />
+            <button
+              onClick={() => handleCopy(shareUrl)}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-navy hover:border-signal"
+            >
+              {copied ? <Check className="h-3 w-3 text-signal" /> : <Copy className="h-3 w-3" />}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="flex-1 text-sm text-steel">No shareable link yet — customers can&apos;t view this quote without one.</p>
+            <button
+              onClick={handleGetLink}
+              disabled={linkPending}
+              className="shrink-0 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-navy hover:border-signal disabled:opacity-50"
+            >
+              {linkPending ? "Generating…" : "Get shareable link"}
+            </button>
+          </>
+        )}
+      </div>
+
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-navy">Line items</h2>
         <select

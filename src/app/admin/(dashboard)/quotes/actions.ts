@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow, type SlotKey } from "@/lib/slots";
+import { generateShareToken } from "@/lib/tokens";
 import type { QuoteStatus } from "@prisma/client";
 
 export async function createQuote(input: {
@@ -105,6 +106,23 @@ export async function updateQuoteDetails(
   revalidatePath(`/admin/quotes/${quoteId}`);
 }
 
+// Returns the quote's public share token, generating one on first request —
+// see the shareToken comment on the Quote model for why it's lazy rather
+// than backfilled. The resulting link (/q/[token]) is public and unauthenticated
+// by design, so treat the token itself as a bearer credential in the URL.
+export async function getOrCreateShareLink(quoteId: string): Promise<string> {
+  const session = await requireSession();
+  requirePermission(session, "quotes:write");
+
+  const quote = await prisma.quote.findUniqueOrThrow({ where: { id: quoteId }, select: { shareToken: true } });
+  if (quote.shareToken) return quote.shareToken;
+
+  const shareToken = generateShareToken();
+  await prisma.quote.update({ where: { id: quoteId }, data: { shareToken } });
+  revalidatePath(`/admin/quotes/${quoteId}`);
+  return shareToken;
+}
+
 export type ConvertQuoteResult = { ok: true; bookingId: string } | { ok: false; error: string };
 
 // "A quote can be converted directly into a Booking with one action,
@@ -124,8 +142,8 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
   if (!quote.eventDate || !quote.slot) {
     return { ok: false, error: "Set an event date and time slot on this quote first." };
   }
-  if (!quote.packageId) {
-    return { ok: false, error: "Convert only supports package-based quotes right now — attach a package." };
+  if (!quote.packageId && quote.lines.length === 0) {
+    return { ok: false, error: "Add at least one line item before converting this quote." };
   }
 
   const dateStr = quote.eventDate.toISOString().slice(0, 10);
@@ -134,15 +152,19 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
 
   try {
     const bookingId = await prisma.$transaction(async (tx) => {
-      const pkg = await tx.package.findUniqueOrThrow({
-        where: { id: quote.packageId! },
-        include: { components: true },
-      });
+      // Package-based quotes assign real equipment from the package's
+      // components (same as before). Custom (line-item-only) quotes have no
+      // catalog items to assign — their line items carry over as
+      // BookingCharge rows instead, so the itemization isn't lost, but no
+      // physical inventory is reserved and staff attach equipment manually.
+      const pkg = quote.packageId
+        ? await tx.package.findUniqueOrThrow({ where: { id: quote.packageId }, include: { components: true } })
+        : null;
 
       const booking = await tx.booking.create({
         data: {
           customerId: quote.customerId!,
-          packageId: pkg.id,
+          packageId: pkg?.id,
           eventName: quote.eventName || undefined,
           eventAddress: quote.eventAddress || undefined,
           date: quote.eventDate!,
@@ -151,17 +173,28 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
           endAt,
           rentalFee: total,
           createdById: session.id,
-          lines: { create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })) },
+          lines: pkg ? { create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })) } : undefined,
         },
       });
 
-      for (const comp of pkg.components) {
-        await assignUnits(tx, {
-          bookingId: booking.id,
-          itemId: comp.itemId,
-          dateStr,
-          slot: quote.slot!,
-          quantity: comp.quantity,
+      if (pkg) {
+        for (const comp of pkg.components) {
+          await assignUnits(tx, {
+            bookingId: booking.id,
+            itemId: comp.itemId,
+            dateStr,
+            slot: quote.slot!,
+            quantity: comp.quantity,
+          });
+        }
+      } else {
+        await tx.bookingCharge.createMany({
+          data: quote.lines.map((l) => ({
+            bookingId: booking.id,
+            description: l.description,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+          })),
         });
       }
 

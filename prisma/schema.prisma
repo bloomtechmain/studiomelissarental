@@ -350,6 +350,10 @@ model Quote {
   lines        QuoteLine[]
   status       QuoteStatus @default(DRAFT)
   expiresAt    DateTime?
+  // Nullable + generated lazily (see getOrCreateShareLink) rather than a
+  // required default, so no backfill is needed for existing rows — a quote
+  // simply has no public link until staff first requests one.
+  shareToken   String?     @unique
   bookingId    String?     @unique
   booking      Booking?    @relation(fields: [bookingId], references: [id])
   createdById  String?

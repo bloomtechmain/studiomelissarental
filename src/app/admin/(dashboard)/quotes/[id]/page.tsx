@@ -34,7 +34,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-navy hover:border-signal"
         >
-          <Printer className="h-3.5 w-3.5" /> Print / share
+          <Printer className="h-3.5 w-3.5" /> Print
         </a>
       </div>
       <p className="mt-1 text-steel">
@@ -60,6 +60,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
             unitPrice: Number(l.unitPrice),
           }))}
           hasCustomer={Boolean(quote.customerId)}
+          shareToken={quote.shareToken}
         />
       </div>
 

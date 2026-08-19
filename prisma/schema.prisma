@@ -23,6 +23,7 @@ enum UnitStatus {
 enum BookingStatus {
   PENDING
   CONFIRMED
+  PAID_IN_FULL
   OUT
   RETURNED
   COMPLETED
@@ -177,6 +178,12 @@ model Booking {
   package      Package?      @relation(fields: [packageId], references: [id])
   eventName    String?
   eventAddress String?
+  // Delivery/pickup checklist (3.4) — deliberately separate from the general
+  // `notes` field above (customer-submitted event notes) since this is
+  // staff-entered logistics info for whoever's actually loading the truck.
+  siteContactName  String?
+  siteContactPhone String?
+  loadInNotes      String?
   date         DateTime      @db.Date
   slot         Slot
   startAt      DateTime // computed from date+slot, used for overlap queries
@@ -205,6 +212,11 @@ model Booking {
   agreementSigned     Boolean   @default(false)
   agreementSignedAt   DateTime?
   agreementOverridden Boolean   @default(false)
+
+  // Same idea for the two payment-gated transitions (3.4): Confirmed
+  // requires the non-refundable booking fee to be on record, Paid in full
+  // requires the full balance — both overridable by an admin, tracked here.
+  depositOverridden Boolean @default(false)
 
   // Section 8: required for Hall/Field tier bookings before delivery.
   insuranceOnFile Boolean @default(false)

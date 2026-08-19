@@ -9,8 +9,10 @@ import ChargesPanel from "./ChargesPanel";
 import RefundPanel from "./RefundPanel";
 import RescheduleForm from "./RescheduleForm";
 import SwapUnitControl from "./SwapUnitControl";
+import ChecklistPanel from "./ChecklistPanel";
 import { getBookingFeePercent } from "@/lib/settings";
 import { computeCancellationRefund } from "@/lib/cancellation";
+import { SLOTS, type SlotKey } from "@/lib/slots";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +116,8 @@ export default async function AdminBookingDetailPage({
           amountPaid={Number(booking.amountPaid)}
           paymentMethod={booking.paymentMethod}
           chargesTotal={chargesTotal}
+          status={booking.status}
+          depositOverridden={booking.depositOverridden}
         />
 
         <AgreementPanel
@@ -124,6 +128,16 @@ export default async function AdminBookingDetailPage({
           insuranceOnFile={booking.insuranceOnFile}
           agreementFileUrl={booking.agreementFileUrl}
           agreementFileName={booking.agreementFileName}
+        />
+
+        <ChecklistPanel
+          bookingId={booking.id}
+          eventAddress={booking.eventAddress}
+          deliveryWindowLabel={`${format(booking.date, "MMM d, yyyy")} — ${SLOTS[booking.slot as SlotKey].label.split(" – ")[0]}`}
+          pickupWindowLabel={`${format(booking.date, "MMM d, yyyy")} — ${SLOTS[booking.slot as SlotKey].label.split(" – ")[1]}`}
+          siteContactName={booking.siteContactName}
+          siteContactPhone={booking.siteContactPhone}
+          loadInNotes={booking.loadInNotes}
         />
 
         <ChargesPanel
@@ -192,7 +206,7 @@ export default async function AdminBookingDetailPage({
                 <td className="py-1.5 text-right">
                   <SwapUnitControl
                     bookingUnitId={bu.id}
-                    canSwap={["PENDING", "CONFIRMED"].includes(booking.status)}
+                    canSwap={["PENDING", "CONFIRMED", "PAID_IN_FULL"].includes(booking.status)}
                   />
                 </td>
               </tr>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookingFinancials } from "../../actions";
-import type { PaymentMethod } from "@prisma/client";
+import type { PaymentMethod, BookingStatus } from "@prisma/client";
 
 const METHODS: PaymentMethod[] = ["CASH", "CHECK", "CARD", "BANK_TRANSFER", "OTHER"];
 const METHOD_LABEL: Record<PaymentMethod, string> = {
@@ -22,6 +22,8 @@ export default function PaymentPanel({
   amountPaid,
   paymentMethod,
   chargesTotal,
+  status,
+  depositOverridden,
 }: {
   bookingId: string;
   bookingFeePercent: number;
@@ -30,6 +32,8 @@ export default function PaymentPanel({
   amountPaid: number;
   paymentMethod: PaymentMethod | null;
   chargesTotal: number;
+  status: BookingStatus;
+  depositOverridden: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -131,6 +135,12 @@ export default function PaymentPanel({
             ${balanceDue.toFixed(2)}
           </dd>
         </div>
+        {depositOverridden && balanceDue > 0 && ["CONFIRMED", "PAID_IN_FULL"].includes(status) && (
+          <p className="text-xs font-medium text-amber-deep">
+            Moved to {status === "PAID_IN_FULL" ? "Paid in full" : "Confirmed"} with a balance still
+            outstanding — admin override on record.
+          </p>
+        )}
       </dl>
 
       <div className="mt-4 flex items-center gap-3">

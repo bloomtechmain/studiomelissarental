@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const STATUSES: BookingStatus[] = [
   "PENDING",
   "CONFIRMED",
+  "PAID_IN_FULL",
   "OUT",
   "RETURNED",
   "COMPLETED",

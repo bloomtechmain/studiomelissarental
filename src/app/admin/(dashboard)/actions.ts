@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
-import { setGlobalBufferHours, setBookingFeePercent } from "@/lib/settings";
+import { setGlobalBufferHours, setBookingFeePercent, getBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
 import { saveAgreementFile, saveItemPhoto } from "@/lib/uploads";
 import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
@@ -17,24 +17,51 @@ import type { BookingStatus, UnitStatus, PaymentMethod, Role } from "@prisma/cli
 // --- Bookings ------------------------------------------------------------
 
 // Server Actions redact thrown error messages once deployed (Next.js only
-// passes the raw message through in dev), so the "needs a signed agreement"
-// case is communicated via a return value the client can branch on, not by
+// passes the raw message through in dev), so each gate a status change can
+// hit is communicated via a return value the client can branch on, not by
 // throwing — throwing is reserved for genuinely unexpected failures.
-export type UpdateBookingStatusResult = { ok: true } | { ok: false; code: "AGREEMENT_REQUIRED" };
+export type UpdateBookingStatusResult =
+  | { ok: true }
+  | { ok: false; code: "AGREEMENT_REQUIRED" | "DEPOSIT_REQUIRED" | "BALANCE_REMAINING" };
 
 export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatus,
-  options?: { overrideAgreement?: boolean }
+  options?: { overrideAgreement?: boolean; overridePayment?: boolean }
 ): Promise<UpdateBookingStatusResult> {
   const session = await requireSession();
   requirePermission(session, "bookings:write");
+
+  let overrodeSomething = false;
 
   if (status === "CONFIRMED") {
     const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
     if (!booking.agreementSigned && !options?.overrideAgreement) {
       return { ok: false, code: "AGREEMENT_REQUIRED" };
     }
+    // "Confirmed (deposit paid)" — the non-refundable booking fee (Section 3
+    // of the rental agreement) must be on record, not just the agreement.
+    const bookingFeePercent = await getBookingFeePercent();
+    const bookingFeeAmount = Number(booking.rentalFee) * (bookingFeePercent / 100);
+    if (Number(booking.amountPaid) < bookingFeeAmount && !options?.overridePayment) {
+      return { ok: false, code: "DEPOSIT_REQUIRED" };
+    }
+    overrodeSomething = Boolean(options?.overrideAgreement || options?.overridePayment);
+  }
+
+  if (status === "PAID_IN_FULL") {
+    const booking = await prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { charges: true },
+    });
+    // Same balanceDue formula PaymentPanel already shows staff.
+    const chargesTotal = booking.charges.reduce((s, c) => s + Number(c.unitPrice) * c.quantity, 0);
+    const balanceDue =
+      Number(booking.rentalFee) + Number(booking.securityDeposit) + chargesTotal - Number(booking.amountPaid);
+    if (balanceDue > 0 && !options?.overridePayment) {
+      return { ok: false, code: "BALANCE_REMAINING" };
+    }
+    overrodeSomething = Boolean(options?.overridePayment);
   }
 
   if (status === "CANCELLED") {
@@ -43,20 +70,22 @@ export async function updateBookingStatus(
       prisma.bookingUnit.deleteMany({ where: { bookingId } }),
       prisma.booking.update({ where: { id: bookingId }, data: { status } }),
     ]);
-  } else if (status === "CONFIRMED" && options?.overrideAgreement) {
+  } else {
     await prisma.booking.update({
       where: { id: bookingId },
-      data: { status, agreementOverridden: true },
+      data: {
+        status,
+        agreementOverridden: options?.overrideAgreement ? true : undefined,
+        depositOverridden: options?.overridePayment ? true : undefined,
+      },
     });
-  } else {
-    await prisma.booking.update({ where: { id: bookingId }, data: { status } });
   }
 
   await logAudit({
     entity: "Booking",
     entityId: bookingId,
     action: "status_change",
-    detail: `Status changed to ${status}${options?.overrideAgreement ? " (agreement override)" : ""}`,
+    detail: `Status changed to ${status}${overrodeSomething ? " (override)" : ""}`,
     actorId: session.id,
   });
 
@@ -310,7 +339,7 @@ export async function swapBookingUnit(
   // "Before delivery" — once equipment is actually out, a swap isn't a paper
   // reassignment anymore, it's a real logistics problem staff need to solve
   // by hand (and Cancelled/Completed bookings shouldn't have units touched).
-  if (!["PENDING", "CONFIRMED"].includes(bookingUnit.booking.status)) {
+  if (!["PENDING", "CONFIRMED", "PAID_IN_FULL"].includes(bookingUnit.booking.status)) {
     return { ok: false, error: "This booking's equipment has already gone out — swap isn't available after delivery." };
   }
 
@@ -366,6 +395,26 @@ export async function updateInsuranceStatus(bookingId: string, onFile: boolean) 
   const session = await requireSession();
   requirePermission(session, "bookings:write");
   await prisma.booking.update({ where: { id: bookingId }, data: { insuranceOnFile: onFile } });
+  revalidatePath(`/admin/bookings/${bookingId}`);
+}
+
+// Delivery/pickup checklist (3.4) — address and the delivery/pickup windows
+// themselves come from existing booking fields (eventAddress, date/slot);
+// this covers the two pieces that don't already exist anywhere else.
+export async function updateBookingChecklist(
+  bookingId: string,
+  input: { siteContactName?: string; siteContactPhone?: string; loadInNotes?: string }
+) {
+  const session = await requireSession();
+  requirePermission(session, "bookings:write");
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      siteContactName: input.siteContactName || null,
+      siteContactPhone: input.siteContactPhone || null,
+      loadInNotes: input.loadInNotes || null,
+    },
+  });
   revalidatePath(`/admin/bookings/${bookingId}`);
 }
 

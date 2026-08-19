@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
       take: 10,
     }),
     prisma.booking.findMany({
-      where: { startAt: { gte: now, lte: in7 }, status: { in: ["CONFIRMED", "PENDING"] } },
+      where: { startAt: { gte: now, lte: in7 }, status: { in: ["CONFIRMED", "PAID_IN_FULL", "PENDING"] } },
       orderBy: { startAt: "asc" },
       include: { customer: true },
       take: 10,

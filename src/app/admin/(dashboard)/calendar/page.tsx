@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 const STATUS_COLOR: Record<string, string> = {
   PENDING: "bg-amber/20 text-amber-deep border-amber/40",
   CONFIRMED: "bg-signal-light text-navy border-signal/40",
+  PAID_IN_FULL: "bg-signal text-white border-signal",
   OUT: "bg-navy text-white border-navy",
   RETURNED: "bg-line text-steel border-line",
   COMPLETED: "bg-line text-steel border-line",

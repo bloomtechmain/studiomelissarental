@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getSession } from "@/lib/auth";
+import { can, type Permission } from "@/lib/permissions";
 import LogoutButton from "./LogoutButton";
 import {
   LayoutDashboard,
@@ -17,7 +18,10 @@ import {
   UserCog,
 } from "lucide-react";
 
-const NAV = [
+// `permission` is omitted for items every logged-in role can view (they're
+// only write-gated at the action level). Items with a permission are hidden
+// entirely from roles that lack it, rather than showing a dead-end link.
+const NAV: { href: string; label: string; icon: typeof LayoutDashboard; permission?: Permission }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/leads", label: "Leads", icon: Target },
   { href: "/admin/quotes", label: "Quotes", icon: FileText },
@@ -27,13 +31,14 @@ const NAV = [
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/addons", label: "Add-ons", icon: Tag },
   { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/staff", label: "Staff", icon: UserCog },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-] as const;
+  { href: "/admin/reports", label: "Reports", icon: BarChart3, permission: "reports:view" },
+  { href: "/admin/staff", label: "Staff", icon: UserCog, permission: "staff:manage" },
+  { href: "/admin/settings", label: "Settings", icon: Settings, permission: "settings:view" },
+];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  const nav = NAV.filter((item) => !item.permission || can(session, item.permission));
 
   return (
     <div className="flex min-h-screen bg-paper">
@@ -48,7 +53,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           />
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const Icon = item.icon;
             return (
               <Link

@@ -48,10 +48,6 @@ export async function requireSession(): Promise<SessionUser> {
   return session;
 }
 
-export function requireRole(session: SessionUser, roles: Role[]) {
-  if (!roles.includes(session.role)) throw new Error("FORBIDDEN");
-}
-
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }

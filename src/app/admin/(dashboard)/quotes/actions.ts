@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireSession, requireRole } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
+import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow, type SlotKey } from "@/lib/slots";
@@ -18,7 +19,7 @@ export async function createQuote(input: {
   slot?: SlotKey;
 }) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "quotes:write");
 
   let basePrice = 0;
   const lines: { description: string; quantity: number; unitPrice: number }[] = [];
@@ -61,7 +62,7 @@ export async function addQuoteLine(
   input: { description: string; quantity: number; unitPrice: number }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "quotes:write");
   await prisma.quoteLine.create({
     data: { quoteId, description: input.description, quantity: input.quantity, unitPrice: input.unitPrice },
   });
@@ -70,7 +71,7 @@ export async function addQuoteLine(
 
 export async function removeQuoteLine(lineId: string, quoteId: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "quotes:write");
   await prisma.quoteLine.delete({ where: { id: lineId } });
   revalidatePath(`/admin/quotes/${quoteId}`);
 }
@@ -88,7 +89,7 @@ export async function updateQuoteDetails(
   }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "quotes:write");
   await prisma.quote.update({
     where: { id: quoteId },
     data: {
@@ -110,7 +111,7 @@ export type ConvertQuoteResult = { ok: true; bookingId: string } | { ok: false; 
 // without re-entering line items."
 export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuoteResult> {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "quotes:write");
 
   const quote = await prisma.quote.findUniqueOrThrow({
     where: { id: quoteId },

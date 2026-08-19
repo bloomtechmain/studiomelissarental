@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireSession, requireRole } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
+import { requirePermission } from "@/lib/permissions";
 import { setGlobalBufferHours, setBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
 import { saveAgreementFile } from "@/lib/uploads";
@@ -25,7 +26,7 @@ export async function updateBookingStatus(
   options?: { overrideAgreement?: boolean }
 ): Promise<UpdateBookingStatusResult> {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:write");
 
   if (status === "CONFIRMED") {
     const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
@@ -69,7 +70,7 @@ export async function updateBookingFinancials(
   input: { rentalFee: number; securityDeposit: number; amountPaid: number; paymentMethod?: PaymentMethod | null }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:financials:write");
   await prisma.booking.update({
     where: { id: bookingId },
     data: {
@@ -94,7 +95,7 @@ export async function updateBookingRefund(
   input: { refundIssued: number; refundNote?: string }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:financials:write");
   await prisma.booking.update({
     where: { id: bookingId },
     data: {
@@ -115,7 +116,7 @@ export async function updateBookingRefund(
 
 export async function uploadAgreementFile(bookingId: string, formData: FormData) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:write");
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("No file provided.");
@@ -150,7 +151,7 @@ export async function addBookingCharge(
   input: { description: string; quantity: number; unitPrice: number }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:financials:write");
   await prisma.bookingCharge.create({
     data: {
       bookingId,
@@ -164,7 +165,7 @@ export async function addBookingCharge(
 
 export async function removeBookingCharge(chargeId: string, bookingId: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:financials:write");
   await prisma.bookingCharge.delete({ where: { id: chargeId } });
   revalidatePath(`/admin/bookings/${bookingId}`);
 }
@@ -178,7 +179,7 @@ export async function rescheduleBooking(
   input: { date: string; slot: SlotKey }
 ): Promise<RescheduleResult> {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:write");
 
   const { startAt, endAt } = slotWindow(input.date, input.slot);
 
@@ -232,7 +233,7 @@ export async function rescheduleBooking(
 
 export async function updateAgreementStatus(bookingId: string, signed: boolean) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:write");
   await prisma.booking.update({
     where: { id: bookingId },
     data: { agreementSigned: signed, agreementSignedAt: signed ? new Date() : null },
@@ -242,14 +243,14 @@ export async function updateAgreementStatus(bookingId: string, signed: boolean) 
 
 export async function updateInsuranceStatus(bookingId: string, onFile: boolean) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "bookings:write");
   await prisma.booking.update({ where: { id: bookingId }, data: { insuranceOnFile: onFile } });
   revalidatePath(`/admin/bookings/${bookingId}`);
 }
 
 export async function updateBookingFeePercent(percent: number) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "settings:write");
   await setBookingFeePercent(percent);
   revalidatePath("/admin/settings");
 }
@@ -258,7 +259,7 @@ export async function updateBookingFeePercent(percent: number) {
 
 export async function createCategory(name: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "inventory:catalog:write");
   await prisma.category.create({ data: { name } });
   revalidatePath("/admin/inventory");
 }
@@ -271,7 +272,7 @@ export async function createItem(input: {
   bufferHours?: number | null;
 }) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "inventory:catalog:write");
   const item = await prisma.item.create({
     data: {
       name: input.name,
@@ -297,7 +298,7 @@ export async function updateItem(
   }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "inventory:catalog:write");
   await prisma.item.update({
     where: { id },
     data: {
@@ -317,7 +318,7 @@ export async function updateItem(
 
 export async function createUnit(itemId: string, serialNumber: string, notes?: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_WAREHOUSE"]);
+  requirePermission(session, "inventory:units:write");
   await prisma.equipmentUnit.create({
     data: { itemId, serialNumber, notes: notes || undefined },
   });
@@ -326,14 +327,14 @@ export async function createUnit(itemId: string, serialNumber: string, notes?: s
 
 export async function updateUnitStatus(unitId: string, itemId: string, status: UnitStatus) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_WAREHOUSE"]);
+  requirePermission(session, "inventory:units:write");
   await prisma.equipmentUnit.update({ where: { id: unitId }, data: { status } });
   revalidatePath(`/admin/inventory/${itemId}`);
 }
 
 export async function addMaintenanceLog(unitId: string, itemId: string, description: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_WAREHOUSE"]);
+  requirePermission(session, "inventory:units:write");
   await prisma.$transaction([
     prisma.maintenanceLog.create({ data: { unitId, description } }),
     prisma.equipmentUnit.update({ where: { id: unitId }, data: { status: "MAINTENANCE" } }),
@@ -343,7 +344,7 @@ export async function addMaintenanceLog(unitId: string, itemId: string, descript
 
 export async function resolveMaintenanceLog(logId: string, unitId: string, itemId: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_WAREHOUSE"]);
+  requirePermission(session, "inventory:units:write");
   await prisma.$transaction([
     prisma.maintenanceLog.update({
       where: { id: logId },
@@ -361,7 +362,7 @@ export async function updateCustomer(
   input: { name: string; email?: string; phone?: string; org?: string; notes?: string; tags: string[] }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN", "STAFF_BOOKINGS"]);
+  requirePermission(session, "customers:write");
   await prisma.customer.update({
     where: { id },
     data: {
@@ -381,7 +382,7 @@ export async function updateCustomer(
 
 export async function updateBufferHours(hours: number) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "settings:write");
   await setGlobalBufferHours(hours);
   revalidatePath("/admin/settings");
 }
@@ -393,7 +394,7 @@ export async function updatePackage(
   input: { description?: string; price: number; active: boolean }
 ) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "packages:write");
   await prisma.package.update({
     where: { id },
     data: { description: input.description || undefined, price: input.price, active: input.active },
@@ -405,7 +406,7 @@ export async function updatePackage(
 
 export async function addPackageComponent(packageId: string, itemId: string, quantity: number) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "packages:write");
   await prisma.packageItem.upsert({
     where: { packageId_itemId: { packageId, itemId } },
     update: { quantity },
@@ -417,7 +418,7 @@ export async function addPackageComponent(packageId: string, itemId: string, qua
 
 export async function updatePackageComponentQuantity(componentId: string, packageId: string, quantity: number) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "packages:write");
   await prisma.packageItem.update({ where: { id: componentId }, data: { quantity } });
   revalidatePath(`/admin/packages/${packageId}`);
   revalidatePath("/");
@@ -425,7 +426,7 @@ export async function updatePackageComponentQuantity(componentId: string, packag
 
 export async function removePackageComponent(componentId: string, packageId: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "packages:write");
   await prisma.packageItem.delete({ where: { id: componentId } });
   revalidatePath(`/admin/packages/${packageId}`);
   revalidatePath("/");
@@ -435,14 +436,14 @@ export async function removePackageComponent(componentId: string, packageId: str
 
 export async function createAddOn(input: { name: string; price: number }) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "addons:write");
   await prisma.addOn.create({ data: { name: input.name, price: input.price } });
   revalidatePath("/admin/addons");
 }
 
 export async function updateAddOn(id: string, input: { name: string; price: number; active: boolean }) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "addons:write");
   await prisma.addOn.update({
     where: { id },
     data: { name: input.name, price: input.price, active: input.active },
@@ -459,7 +460,7 @@ export async function createStaffUser(input: {
   role: Role;
 }) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "staff:manage");
   const passwordHash = await bcrypt.hash(input.password, 10);
   await prisma.user.create({
     data: { name: input.name, email: input.email, passwordHash, role: input.role },
@@ -469,14 +470,14 @@ export async function createStaffUser(input: {
 
 export async function updateStaffRole(userId: string, role: Role) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "staff:manage");
   await prisma.user.update({ where: { id: userId }, data: { role } });
   revalidatePath("/admin/staff");
 }
 
 export async function resetStaffPassword(userId: string, newPassword: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "staff:manage");
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   revalidatePath("/admin/staff");
@@ -484,7 +485,7 @@ export async function resetStaffPassword(userId: string, newPassword: string) {
 
 export async function deleteStaffUser(userId: string) {
   const session = await requireSession();
-  requireRole(session, ["ADMIN"]);
+  requirePermission(session, "staff:manage");
   if (userId === session.id) {
     throw new Error("You can't delete your own account while signed in as it.");
   }

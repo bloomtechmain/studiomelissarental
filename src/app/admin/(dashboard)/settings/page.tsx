@@ -1,9 +1,15 @@
 import { getGlobalBufferHours, getBookingFeePercent } from "@/lib/settings";
+import { getSession } from "@/lib/auth";
+import { can } from "@/lib/permissions";
+import { redirect } from "next/navigation";
 import SettingsForm from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
+  const session = await getSession();
+  if (!can(session, "settings:view")) redirect("/admin");
+
   const [bufferHours, bookingFeePercent] = await Promise.all([
     getGlobalBufferHours(),
     getBookingFeePercent(),

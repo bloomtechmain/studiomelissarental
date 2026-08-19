@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import StaffClient from "./StaffClient";
 
@@ -7,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminStaffPage() {
   const session = await getSession();
-  if (session?.role !== "ADMIN") redirect("/admin");
+  if (!session || !can(session, "staff:manage")) redirect("/admin");
 
   const staff = await prisma.user.findMany({ orderBy: { name: "asc" } });
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { format, subMonths, startOfMonth } from "date-fns";
 
@@ -7,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminReportsPage() {
   const session = await getSession();
-  if (session?.role !== "ADMIN") redirect("/admin");
+  if (!can(session, "reports:view")) redirect("/admin");
 
   const twelveMonthsAgo = startOfMonth(subMonths(new Date(), 11));
   const bookings = await prisma.booking.findMany({

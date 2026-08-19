@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  /* Studio Melissa Rental brand palette */
+  --color-navy: #0c2d4d;
+  --color-navy-dark: #10151b;
+  --color-signal: #1d6fbf;
+  --color-signal-light: #b5d4f4;
+  --color-paper: #f6f4ef;
+  --color-steel: #5b6672;
+  --color-amber: #e8a33d;
+  --color-amber-deep: #8a5a16;
+  --color-line: #dad6cb;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-navy);
+}
+
+@theme inline {
+  --color-navy: var(--color-navy);
+  --color-navy-dark: var(--color-navy-dark);
+  --color-signal: var(--color-signal);
+  --color-signal-light: var(--color-signal-light);
+  --color-paper: var(--color-paper);
+  --color-steel: var(--color-steel);
+  --color-amber: var(--color-amber);
+  --color-amber-deep: var(--color-amber-deep);
+  --color-line: var(--color-line);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-display: var(--font-sora);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+}
+
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: #e6f1fb;
+  color: var(--color-signal);
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+}
+
+.bg-dot-grid {
+  background-image: radial-gradient(var(--color-line) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+.bg-dot-grid-dark {
+  background-image: radial-gradient(rgba(181, 212, 244, 0.16) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}

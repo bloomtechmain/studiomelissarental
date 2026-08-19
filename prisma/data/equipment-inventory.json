@@ -1,0 +1,272 @@
+[
+  {
+    "category": "Mixer",
+    "name": "Behringer X32",
+    "units": 1
+  },
+  {
+    "category": "Mixer",
+    "name": "Yamaha MG12XU",
+    "units": 1
+  },
+  {
+    "category": "Mixer",
+    "name": "Behringer Xenyx 1204USB no FX",
+    "units": 1
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Alto Professional TX210",
+    "units": 2
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Alto Professional TX415",
+    "units": 2
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Harbinger Vari v2408",
+    "units": 2
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Harbinger Vari v3412",
+    "units": 2
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Harbinger Vari v2315",
+    "units": 2
+  },
+  {
+    "category": "Powered Speakers",
+    "name": "Yamaha DXR15 mk3",
+    "units": 2
+  },
+  {
+    "category": "Powered Subwoofer",
+    "name": "12inch MTX Audio",
+    "units": 1
+  },
+  {
+    "category": "Powered Subwoofer",
+    "name": "18inch RCF SUB 708-AS MK2",
+    "units": 2
+  },
+  {
+    "category": "Mixing / DSP",
+    "name": "Behringer Ultra-Graph PRO GEQ3102",
+    "units": 1
+  },
+  {
+    "category": "Mixing / DSP",
+    "name": "Zoom rfx-2200",
+    "units": 1
+  },
+  {
+    "category": "Mixing / DSP",
+    "name": "dbx DriveRack PA2",
+    "units": 1
+  },
+  {
+    "category": "Mixing / DSP",
+    "name": "BBE Max-X2",
+    "units": 1
+  },
+  {
+    "category": "Power Conditioner",
+    "name": "PDU Metered 120V 30A 5-15/20R 12-Outlet",
+    "units": 2
+  },
+  {
+    "category": "Power Conditioner",
+    "name": "PDU Metered 120V 20A 5-15/20R 12-Outlet",
+    "units": 1
+  },
+  {
+    "category": "Microphones",
+    "name": "RØDE NT1 Signature Series Condenser Microphone",
+    "units": 1
+  },
+  {
+    "category": "Microphones",
+    "name": "Shure SM58 Cardioid Dynamic Vocal Microphone",
+    "units": 2
+  },
+  {
+    "category": "Microphones",
+    "name": "Sennheiser Pro Audio Professional E 835",
+    "units": 2
+  },
+  {
+    "category": "Microphones",
+    "name": "Behringer mx8500",
+    "units": 4
+  },
+  {
+    "category": "Microphones",
+    "name": "Behringer C2",
+    "units": 5
+  },
+  {
+    "category": "Microphones",
+    "name": "Sanken CS-2",
+    "units": 2
+  },
+  {
+    "category": "Microphones",
+    "name": "Sony ECM-778",
+    "units": 2
+  },
+  {
+    "category": "Microphones",
+    "name": "Sennheiser EW100ENG G2 100 Series",
+    "units": 14
+  },
+  {
+    "category": "Microphones",
+    "name": "JLab Talk USB Microphone",
+    "units": 1
+  },
+  {
+    "category": "Microphones",
+    "name": "BEHRINGER ECM8000",
+    "units": 1
+  },
+  {
+    "category": "Accessories",
+    "name": "XLR Female to 1/4\" TRS Adapter",
+    "units": 8
+  },
+  {
+    "category": "Accessories",
+    "name": "XLR Male to 1/4\" TRS Adapter",
+    "units": 4
+  },
+  {
+    "category": "Accessories",
+    "name": "JOYO 5.8Ghz Wireless XLR Microphone Transmitter Receiver",
+    "units": 1
+  },
+  {
+    "category": "Accessories",
+    "name": "Microphone Stand Foldable Tripod Boom Arm Floor Mic Stand",
+    "units": 2
+  },
+  {
+    "category": "Accessories",
+    "name": "Musou RCA Analog to Digital Optical Toslink Coaxial Audio Converter",
+    "units": 1
+  },
+  {
+    "category": "Accessories",
+    "name": "Professional Microphone Isolation Shield with Pop Filter",
+    "units": 1
+  },
+  {
+    "category": "Accessories",
+    "name": "3 Pin Male/Female Audio Mic Microphone Connector",
+    "units": 4
+  },
+  {
+    "category": "Accessories",
+    "name": "Furry Windscreen Muff for Behringer C-2 Mic",
+    "units": 4
+  },
+  {
+    "category": "Accessories",
+    "name": "SmallRig Microphone Shock Mount for Behringer c-2 Mic",
+    "units": 4
+  },
+  {
+    "category": "Accessories",
+    "name": "Focusrite Scarlett 2i2 3rd Gen",
+    "units": 1
+  },
+  {
+    "category": "Accessories",
+    "name": "Pyle Dual Studio Monitor Speaker Stand",
+    "units": 2
+  },
+  {
+    "category": "Accessories",
+    "name": "Rockville RVES1 Pair Adjustable Tripod PA Speaker Stands",
+    "units": 12
+  },
+  {
+    "category": "Cable",
+    "name": "Dual RCA to XLR Unbalanced Interconnect Cable",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "CPR-202 Dual 1/4\" TS to Dual RCA Stereo Interconnect Cable 2 Meteres",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "Amazon Basics Standard XLR 25ft",
+    "units": 2
+  },
+  {
+    "category": "Cable",
+    "name": "Dual RCA to XLR Cable, Dual RCA Male to Dual XLR Male, 10ft",
+    "units": 3
+  },
+  {
+    "category": "Cable",
+    "name": "Amazon Basics 3.5 mm Male to Male Stereo Audio Cable, 8 Feet",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "Cable Matters Dual XLR to RCA Cable 10 ft,",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "Cable Matters 2-Pack 1/4 Inch TS to TS",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "CPR-202 Dual 1/4\" TS to Dual RCA Stereo",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "3.5mm 1/8\" TRS to Dual 6.35mm 1/4\" TS Mono Stereo Y-Cable Splitter Cord",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "EBXYA XLR Cable 20ft",
+    "units": 8
+  },
+  {
+    "category": "Cable",
+    "name": "Balanced XLR Splitter Cable - 1.5ft",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "EBXYA XLR Cables 3ft",
+    "units": 4
+  },
+  {
+    "category": "Cable",
+    "name": "Gearlux XLR Microphone Cable, 100 Feet",
+    "units": 2
+  },
+  {
+    "category": "Cable",
+    "name": "Dual RCA to XLR Unbalanced Interconnect Cable - 10ft",
+    "units": 1
+  },
+  {
+    "category": "Cable",
+    "name": "XLR Splitter, Balanced XLR Splitter Cable Male to 2 Female",
+    "units": 1
+  }
+]

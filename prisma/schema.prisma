@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF_BOOKINGS
+  STAFF_WAREHOUSE
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OUT
+  MAINTENANCE
+  RETIRED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  OUT
+  RETURNED
+  COMPLETED
+  CANCELLED
+}
+
+enum Slot {
+  MORNING // 08:00 - 18:00
+  AFTERNOON // 15:00 - 24:00
+}
+
+enum LeadSource {
+  WEBSITE
+  PHONE
+  EMAIL
+  REFERRAL
+  REPEAT_CUSTOMER
+}
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  QUOTE_SENT
+  BOOKING_CONFIRMED
+  COMPLETED
+  LOST
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  EXPIRED
+  DECLINED
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  passwordHash   String
+  role           Role           @default(STAFF_BOOKINGS)
+  createdAt      DateTime       @default(now())
+  bookingsMade   Booking[]      @relation("CreatedBy")
+  leadsCreated   Lead[]         @relation("LeadCreatedBy")
+  quotesCreated  Quote[]        @relation("QuoteCreatedBy")
+  leadActivities LeadActivity[]
+  auditLogs      AuditLog[]
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  items Item[]
+}
+
+model Item {
+  id           String          @id @default(cuid())
+  name         String          @unique
+  categoryId   String
+  category     Category        @relation(fields: [categoryId], references: [id])
+  description  String?
+  photoUrl     String?
+  dailyRate    Decimal         @default(0) @db.Decimal(10, 2)
+  bufferHours  Int? // per-item override; falls back to global setting when null
+  active       Boolean         @default(true)
+  units        EquipmentUnit[]
+  packageLines PackageItem[]
+  bookingLines BookingLine[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model EquipmentUnit {
+  id           String        @id @default(cuid())
+  itemId       String
+  item         Item          @relation(fields: [itemId], references: [id])
+  serialNumber String        @unique
+  status       UnitStatus    @default(AVAILABLE)
+  purchaseDate DateTime?
+  purchaseCost Decimal?      @db.Decimal(10, 2)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  assignments  BookingUnit[]
+  maintenance  MaintenanceLog[]
+}
+
+model MaintenanceLog {
+  id          String        @id @default(cuid())
+  unitId      String
+  unit        EquipmentUnit @relation(fields: [unitId], references: [id])
+  description String
+  resolved    Boolean       @default(false)
+  resolvedBy  String?
+  createdAt   DateTime      @default(now())
+  resolvedAt  DateTime?
+}
+
+model Package {
+  id          String        @id @default(cuid())
+  name        String        @unique // Huddle / Gathering / Hall / Field
+  tier        Int // 1..4 display order
+  description String?
+  price       Decimal       @default(0) @db.Decimal(10, 2)
+  active      Boolean       @default(true)
+  components  PackageItem[]
+  bookings    Booking[]
+  quotes      Quote[]
+}
+
+model PackageItem {
+  id        String  @id @default(cuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item    @relation(fields: [itemId], references: [id])
+  quantity  Int     @default(1)
+
+  @@unique([packageId, itemId])
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  org       String?
+  address   String?
+  notes     String?
+  tags      String[]  @default([])
+  bookings  Booking[]
+  leads     Lead[]
+  quotes    Quote[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  packageId    String?
+  package      Package?      @relation(fields: [packageId], references: [id])
+  eventName    String?
+  eventAddress String?
+  date         DateTime      @db.Date
+  slot         Slot
+  startAt      DateTime // computed from date+slot, used for overlap queries
+  endAt        DateTime // computed from date+slot
+  status       BookingStatus @default(PENDING)
+  notes        String?
+  createdById  String?
+  createdBy    User?         @relation("CreatedBy", fields: [createdById], references: [id])
+  lines        BookingLine[]
+  units        BookingUnit[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Payment tracking (manual/reference — no online payment processor wired
+  // up). rentalFee/securityDeposit are quoted per booking once pricing is
+  // known; amountPaid is whatever staff have recorded as received so far
+  // (booking fee + balance + deposit combined). Booking-fee % and the
+  // cancellation-refund tiers come from the signed rental agreement.
+  rentalFee       Decimal  @default(0) @db.Decimal(10, 2)
+  securityDeposit Decimal  @default(0) @db.Decimal(10, 2)
+  amountPaid      Decimal  @default(0) @db.Decimal(10, 2)
+
+  // Section 3.6 of the rental agreement: a booking shouldn't move to
+  // Confirmed without a signed agreement on file, unless an admin
+  // explicitly overrides that (tracked via agreementOverridden).
+  agreementSigned     Boolean   @default(false)
+  agreementSignedAt   DateTime?
+  agreementOverridden Boolean   @default(false)
+
+  // Section 8: required for Hall/Field tier bookings before delivery.
+  insuranceOnFile Boolean @default(false)
+
+  // How amountPaid was actually collected, and — if the booking was
+  // cancelled — the refund actually issued (as opposed to the merely
+  // suggested figure computed from the cancellation policy).
+  paymentMethod PaymentMethod?
+  refundIssued  Decimal        @default(0) @db.Decimal(10, 2)
+  refundNote    String?
+  refundedAt    DateTime?
+
+  // Real uploaded signed-agreement file (Section 3.6), in addition to the
+  // agreementSigned toggle above. Stored on local disk under
+  // /uploads/agreements — see src/lib/uploads.ts.
+  agreementFileUrl  String?
+  agreementFileName String?
+
+  // Extra priced lines beyond the base rentalFee — add-ons (positive
+  // unitPrice) and discounts (negative unitPrice), per Section 5.
+  charges BookingCharge[]
+
+  quote Quote?
+
+  @@index([startAt, endAt])
+  @@index([date])
+}
+
+model BookingCharge {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2) // negative for a discount line
+  createdAt   DateTime @default(now())
+}
+
+model AddOn {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  price  Decimal @default(0) @db.Decimal(10, 2)
+  active Boolean @default(true)
+}
+
+model BookingLine {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item    @relation(fields: [itemId], references: [id])
+  quantity  Int     @default(1)
+}
+
+// Concrete assignment of a physical unit to a booking's rental window.
+// This is the source of truth for double-booking prevention: a Postgres
+// EXCLUDE constraint (added via raw-SQL migration) guarantees no two rows
+// for the same unitId ever have overlapping [blockedFrom, blockedUntil)
+// ranges, even under concurrent requests. Rows are deleted when a booking
+// is cancelled, freeing the unit immediately.
+model BookingUnit {
+  id            String        @id @default(cuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  unitId        String
+  unit          EquipmentUnit @relation(fields: [unitId], references: [id])
+  blockedFrom   DateTime // booking.startAt
+  blockedUntil  DateTime // booking.endAt + buffer hours
+  createdAt     DateTime      @default(now())
+
+  @@unique([bookingId, unitId])
+  @@index([unitId])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// --- Lead / CRM pipeline -----------------------------------------------
+// New Lead -> Contacted -> Quote Sent -> Booking Confirmed -> Completed,
+// with a Lost/Declined branch. Separate from Customer: a Lead is a
+// not-yet-won inquiry; converting one just points it at (or creates) a
+// Customer record rather than re-entering data.
+
+model Lead {
+  id              String         @id @default(cuid())
+  name            String
+  email           String?
+  phone           String?
+  org             String?
+  eventDate       DateTime?
+  roomSize        String?
+  guestCount      Int?
+  recommendedTier String?
+  eventAddress    String?
+  source          LeadSource     @default(PHONE)
+  stage           LeadStage      @default(NEW)
+  followUpOn      DateTime?
+  customerId      String?
+  customer        Customer?      @relation(fields: [customerId], references: [id])
+  notes           String?
+  activities      LeadActivity[]
+  quotes          Quote[]
+  createdById     String?
+  createdBy       User?          @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([stage])
+  @@index([followUpOn])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String // call | email | note | stage_change
+  content   String
+  staffId   String?
+  staff     User?    @relation(fields: [staffId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// --- Quoting -------------------------------------------------------------
+// A Quote can be generated from a Lead or a Customer, converts into a
+// Booking with one action (see convertQuoteToBooking), and is viewable as
+// a shareable/printable page (see /admin/quotes/[id]/print).
+
+model Quote {
+  id           String      @id @default(cuid())
+  leadId       String?
+  lead         Lead?       @relation(fields: [leadId], references: [id])
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  packageId    String?
+  package      Package?    @relation(fields: [packageId], references: [id])
+  eventName    String?
+  eventAddress String?
+  eventDate    DateTime?
+  slot         Slot?
+  basePrice    Decimal     @default(0) @db.Decimal(10, 2)
+  lines        QuoteLine[]
+  status       QuoteStatus @default(DRAFT)
+  expiresAt    DateTime?
+  bookingId    String?     @unique
+  booking      Booking?    @relation(fields: [bookingId], references: [id])
+  createdById  String?
+  createdBy    User?       @relation("QuoteCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model QuoteLine {
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10, 2) // negative for a discount line
+}
+
+// --- Audit trail -----------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  entity    String // "Booking" | "Item" | "EquipmentUnit" | ...
+  entityId  String
+  action    String // "status_change" | "financials_change" | "unit_status_change" | ...
+  detail    String
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}

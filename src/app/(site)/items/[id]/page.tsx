@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import BookingWidget from "@/components/BookingWidget";
 import { ChevronLeft } from "lucide-react";
@@ -28,6 +29,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr]">
         <div className="animate-fade-up">
+          {item.photoUrl && (
+            <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-2xl border border-line bg-white">
+              <Image src={item.photoUrl} alt={item.name} fill className="object-contain p-4" />
+            </div>
+          )}
           <p className="tier-pill">{item.category.name}</p>
           <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-navy">
             {item.name}

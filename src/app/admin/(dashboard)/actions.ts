@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { setGlobalBufferHours, setBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
-import { saveAgreementFile } from "@/lib/uploads";
+import { saveAgreementFile, saveItemPhoto } from "@/lib/uploads";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow, type SlotKey } from "@/lib/slots";
 import bcrypt from "bcryptjs";
@@ -338,6 +338,34 @@ export async function updateItem(
   revalidatePath(`/admin/inventory/${id}`);
 }
 
+export async function uploadItemPhoto(itemId: string, formData: FormData) {
+  const session = await requireSession();
+  requirePermission(session, "inventory:catalog:write");
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("No file provided.");
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error("Image too large (8MB max).");
+  }
+  const { url } = await saveItemPhoto(itemId, file);
+  await prisma.item.update({ where: { id: itemId }, data: { photoUrl: url } });
+  revalidatePath("/admin/inventory");
+  revalidatePath(`/admin/inventory/${itemId}`);
+  revalidatePath("/");
+  revalidatePath(`/items/${itemId}`);
+}
+
+export async function removeItemPhoto(itemId: string) {
+  const session = await requireSession();
+  requirePermission(session, "inventory:catalog:write");
+  await prisma.item.update({ where: { id: itemId }, data: { photoUrl: null } });
+  revalidatePath("/admin/inventory");
+  revalidatePath(`/admin/inventory/${itemId}`);
+  revalidatePath("/");
+  revalidatePath(`/items/${itemId}`);
+}
+
 // --- Inventory: units & maintenance ---------------------------------------
 
 export async function createUnit(itemId: string, serialNumber: string, notes?: string) {
@@ -345,6 +373,24 @@ export async function createUnit(itemId: string, serialNumber: string, notes?: s
   requirePermission(session, "inventory:units:write");
   await prisma.equipmentUnit.create({
     data: { itemId, serialNumber, notes: notes || undefined },
+  });
+  revalidatePath(`/admin/inventory/${itemId}`);
+}
+
+export async function updateUnitDetails(
+  unitId: string,
+  itemId: string,
+  input: { purchaseDate?: string | null; purchaseCost?: number | null; notes?: string }
+) {
+  const session = await requireSession();
+  requirePermission(session, "inventory:units:write");
+  await prisma.equipmentUnit.update({
+    where: { id: unitId },
+    data: {
+      purchaseDate: input.purchaseDate ? new Date(`${input.purchaseDate}T00:00:00`) : null,
+      purchaseCost: input.purchaseCost ?? null,
+      notes: input.notes || undefined,
+    },
   });
   revalidatePath(`/admin/inventory/${itemId}`);
 }

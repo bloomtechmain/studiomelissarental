@@ -5,6 +5,18 @@ export const SLOTS: Record<SlotKey, { label: string; startHour: number; endHour:
   AFTERNOON: { label: "3:00 PM – 12:00 AM", startHour: 15, endHour: 24 },
 };
 
+// The inverse of the "YYYY-MM-DD" -> local-midnight Date construction used
+// throughout this app (see slotWindow below, and the *Date fields built as
+// `new Date(\`${dateStr}T00:00:00\`)` in the various actions). Reading a date
+// back via `.toISOString().slice(0, 10)` is WRONG here — toISOString
+// converts to UTC first, which shifts the calendar day for any timezone
+// behind UTC. Always pair local-midnight construction with this, not that.
+export function toDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+}
+
 // date is a "YYYY-MM-DD" string interpreted as wall-clock local time.
 // endHour of 24 means midnight at the start of the following day.
 export function slotWindow(dateStr: string, slot: SlotKey): { startAt: Date; endAt: Date } {

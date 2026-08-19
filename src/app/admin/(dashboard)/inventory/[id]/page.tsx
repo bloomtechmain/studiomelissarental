@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { toDateStr } from "@/lib/slots";
 import EditItemForm from "./EditItemForm";
 import UnitsPanel from "./UnitsPanel";
 
@@ -26,6 +27,21 @@ export default async function AdminItemDetailPage({
   ]);
   if (!item) notFound();
 
+  // A unit still shows AVAILABLE in its manually-set status field even once
+  // it's earmarked for an upcoming booking — status is a physical/manual
+  // toggle, not auto-synced (see availability.ts). "Reserved" is instead
+  // computed here at read time from any live (non-cancelled — cancellation
+  // deletes its BookingUnit rows immediately) future assignment, the same
+  // way real-time availability itself is computed rather than stored.
+  const reservedUnitIds = new Set(
+    (
+      await prisma.bookingUnit.findMany({
+        where: { unitId: { in: item.units.map((u) => u.id) }, blockedUntil: { gt: new Date() } },
+        select: { unitId: true },
+      })
+    ).map((b) => b.unitId)
+  );
+
   return (
     <div>
       <Link href="/admin/inventory" className="text-sm text-signal">
@@ -43,6 +59,7 @@ export default async function AdminItemDetailPage({
             dailyRate: Number(item.dailyRate),
             bufferHours: item.bufferHours,
             active: item.active,
+            photoUrl: item.photoUrl,
           }}
           categories={categories}
         />
@@ -53,6 +70,9 @@ export default async function AdminItemDetailPage({
             serialNumber: u.serialNumber,
             status: u.status,
             notes: u.notes,
+            purchaseDate: u.purchaseDate ? toDateStr(u.purchaseDate) : null,
+            purchaseCost: u.purchaseCost !== null ? Number(u.purchaseCost) : null,
+            reserved: reservedUnitIds.has(u.id),
             maintenance: u.maintenance.map((m) => ({
               id: m.id,
               description: m.description,

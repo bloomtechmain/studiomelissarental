@@ -32,3 +32,33 @@ export async function readAgreementFile(storedName: string): Promise<Buffer> {
   }
   return fs.readFile(filePath);
 }
+
+// Item photos are shown on the public catalog, so — unlike agreements —
+// they're served without auth via /api/items/photos/[filename]. Still kept
+// outside /public and behind a route rather than a static path, so the same
+// path-traversal guard pattern applies to every upload type in this file.
+const ITEM_PHOTOS_DIR = path.join(process.cwd(), "uploads", "items");
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+export async function saveItemPhoto(itemId: string, file: File): Promise<{ url: string }> {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Unsupported image type — use JPEG, PNG, WebP, or GIF.");
+  }
+  await fs.mkdir(ITEM_PHOTOS_DIR, { recursive: true });
+
+  const ext = path.extname(file.name) || ".jpg";
+  const storedName = `${itemId}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}${ext}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(path.join(ITEM_PHOTOS_DIR, storedName), buffer);
+
+  return { url: `/api/items/photos/${storedName}` };
+}
+
+export async function readItemPhoto(storedName: string): Promise<Buffer> {
+  const filePath = path.join(ITEM_PHOTOS_DIR, storedName);
+  if (!filePath.startsWith(ITEM_PHOTOS_DIR)) {
+    throw new Error("Invalid file path.");
+  }
+  return fs.readFile(filePath);
+}

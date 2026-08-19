@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
-import { slotWindow, type SlotKey } from "@/lib/slots";
+import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
 import { generateShareToken } from "@/lib/tokens";
 import type { QuoteStatus } from "@prisma/client";
 
@@ -146,7 +146,7 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
     return { ok: false, error: "Add at least one line item before converting this quote." };
   }
 
-  const dateStr = quote.eventDate.toISOString().slice(0, 10);
+  const dateStr = toDateStr(quote.eventDate);
   const { startAt, endAt } = slotWindow(dateStr, quote.slot);
   const total = quote.lines.reduce((sum, l) => sum + Number(l.unitPrice) * l.quantity, 0);
 

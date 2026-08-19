@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateItem } from "../../actions";
+import { updateItem, uploadItemPhoto, removeItemPhoto } from "../../actions";
+import Image from "next/image";
+import { Upload, X } from "lucide-react";
 
 type Item = {
   id: string;
@@ -12,6 +14,7 @@ type Item = {
   dailyRate: number;
   bufferHours: number | null;
   active: boolean;
+  photoUrl: string | null;
 };
 
 export default function EditItemForm({
@@ -24,6 +27,8 @@ export default function EditItemForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(item.name);
   const [categoryId, setCategoryId] = useState(item.categoryId);
@@ -49,8 +54,73 @@ export default function EditItemForm({
     });
   }
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      try {
+        await uploadItemPhoto(item.id, formData);
+        router.refresh();
+      } catch {
+        setPhotoError("Upload failed — use a JPEG/PNG/WebP/GIF under 8MB.");
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    });
+  }
+
+  function handleRemovePhoto() {
+    startTransition(async () => {
+      await removeItemPhoto(item.id);
+      router.refresh();
+    });
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-line bg-white shadow-sm p-5">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-navy">Photo</span>
+        <div className="flex items-center gap-3">
+          {item.photoUrl ? (
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-line">
+              <Image src={item.photoUrl} alt={item.name} fill className="object-cover" />
+            </div>
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-dashed border-line text-xs text-steel">
+              No photo
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <label className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded border border-line px-3 py-1.5 text-xs font-semibold text-navy hover:border-signal">
+              <Upload className="h-3 w-3" />
+              {item.photoUrl ? "Replace photo" : "Upload photo"}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={pending}
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </label>
+            {item.photoUrl && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={handleRemovePhoto}
+                className="inline-flex w-fit items-center gap-1 text-xs font-medium text-steel hover:text-red-600"
+              >
+                <X className="h-3 w-3" /> Remove
+              </button>
+            )}
+          </div>
+        </div>
+        {photoError && <p className="text-xs font-medium text-red-600">{photoError}</p>}
+      </div>
+
       <label className="flex flex-col gap-1 text-sm font-medium text-navy">
         Name
         <input

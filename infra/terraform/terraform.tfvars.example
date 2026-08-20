@@ -1,0 +1,10 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored — never commit real secrets.
+
+db_master_password = "REPLACE_ME_WITH_A_STRONG_PASSWORD"
+
+# Contents of your SSH public key file, e.g. on Windows:
+#   type $env:USERPROFILE\.ssh\id_ed25519.pub
+# If you don't have one yet, generate it first:
+#   ssh-keygen -t ed25519 -C "studio-melissa-deploy"
+ssh_public_key = "ssh-ed25519 AAAA... your-key-here"

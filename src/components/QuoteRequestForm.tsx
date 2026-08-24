@@ -11,7 +11,7 @@ import {
   PartyPopper,
   Sun,
 } from "lucide-react";
-import { SLOTS, type SlotKey } from "@/lib/slots";
+import { SLOTS, toDateStr, type SlotKey } from "@/lib/slots";
 import { truncateSignatureCode } from "@/lib/signatureEncryption";
 import LeadAgreementText from "@/components/LeadAgreementText";
 import SignaturePad, { type SignaturePadHandle } from "@/components/SignaturePad";
@@ -198,6 +198,7 @@ export default function QuoteRequestForm({
           <input
             type="date"
             required
+            min={toDateStr(new Date())}
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
             className={fieldClass}

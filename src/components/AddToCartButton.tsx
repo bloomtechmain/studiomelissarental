@@ -20,6 +20,17 @@ export default function AddToCartButton({
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [limitNotice, setLimitNotice] = useState(false);
+
+  function handleIncrement(e: React.SyntheticEvent) {
+    e.preventDefault();
+    if (quantity >= maxQuantity) {
+      setLimitNotice(true);
+      setTimeout(() => setLimitNotice(false), 2500);
+      return;
+    }
+    setQuantity((q) => q + 1);
+  }
 
   function handleAdd(e?: React.SyntheticEvent) {
     e?.preventDefault();
@@ -50,47 +61,48 @@ export default function AddToCartButton({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center rounded-full border border-line">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center rounded-full border border-line">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setQuantity((q) => Math.max(1, q - 1));
+            }}
+            className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
+          >
+            <Minus className="h-3 w-3" />
+          </button>
+          <span className="w-6 text-center text-sm font-semibold text-navy">{quantity}</span>
+          <button type="button" onClick={handleIncrement} className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy">
+            <Plus className="h-3 w-3" />
+          </button>
+        </div>
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            setQuantity((q) => Math.max(1, q - 1));
-          }}
-          className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
+          onClick={handleAdd}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.99] ${
+            added ? "bg-signal" : "bg-navy hover:brightness-110"
+          }`}
         >
-          <Minus className="h-3 w-3" />
-        </button>
-        <span className="w-6 text-center text-sm font-semibold text-navy">{quantity}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            setQuantity((q) => Math.min(maxQuantity, q + 1));
-          }}
-          className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
-        >
-          <Plus className="h-3 w-3" />
+          {added ? (
+            <>
+              <Check className="h-4 w-4" /> Added
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="h-4 w-4" /> Add to cart
+            </>
+          )}
         </button>
       </div>
-      <button
-        type="button"
-        onClick={handleAdd}
-        className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.99] ${
-          added ? "bg-signal" : "bg-navy hover:brightness-110"
-        }`}
-      >
-        {added ? (
-          <>
-            <Check className="h-4 w-4" /> Added
-          </>
-        ) : (
-          <>
-            <ShoppingCart className="h-4 w-4" /> Add to cart
-          </>
-        )}
-      </button>
+      {limitNotice && (
+        <p className="text-xs font-medium text-amber-deep">
+          That&apos;s the most we have available — {maxQuantity} unit{maxQuantity === 1 ? "" : "s"}{" "}
+          in our fleet.
+        </p>
+      )}
     </div>
   );
 }

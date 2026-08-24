@@ -64,6 +64,16 @@ export default function CartPage() {
   const [slot, setSlot] = useState<SlotKey>("MORNING");
   const [checking, setChecking] = useState(false);
   const [availability, setAvailability] = useState<Record<string, number>>({});
+  const [limitNoticeItemId, setLimitNoticeItemId] = useState<string | null>(null);
+
+  function handleIncrementLine(line: { itemId: string; quantity: number; maxQuantity: number }) {
+    if (line.quantity >= line.maxQuantity) {
+      setLimitNoticeItemId(line.itemId);
+      setTimeout(() => setLimitNoticeItemId((cur) => (cur === line.itemId ? null : cur)), 2500);
+      return;
+    }
+    cart.updateQuantity(line.itemId, line.quantity + 1);
+  }
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -433,6 +443,12 @@ export default function CartPage() {
                       </span>
                     )}
                   </p>
+                  {limitNoticeItemId === line.itemId && (
+                    <p className="mt-1 text-xs font-medium text-amber-deep">
+                      That&apos;s the most we have available — {line.maxQuantity} unit
+                      {line.maxQuantity === 1 ? "" : "s"} in our fleet.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center rounded-full border border-line">
                   <button
@@ -447,7 +463,7 @@ export default function CartPage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => cart.updateQuantity(line.itemId, line.quantity + 1)}
+                    onClick={() => handleIncrementLine(line)}
                     className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
                   >
                     <Plus className="h-3 w-3" />

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Loader2, PartyPopper } from "lucide-react";
-import { slotOptions, type SlotKey } from "@/lib/slots";
+import { CalendarDays, CheckCircle2, ChevronRight, Loader2, Moon, PartyPopper, Sun } from "lucide-react";
+import { SLOTS, type SlotKey } from "@/lib/slots";
 
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
@@ -28,9 +28,20 @@ export default function QuoteRequestForm({
   const [notes, setNotes] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
 
+  const [step, setStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  function handleContinue(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!eventDate || !eventTimeSlot) {
+      setError("Pick a date and a time slot to continue.");
+      return;
+    }
+    setStep(2);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,10 +49,6 @@ export default function QuoteRequestForm({
 
     if (!email.trim() && !phone.trim()) {
       setError("Give us an email or a phone number so we can get back to you.");
-      return;
-    }
-    if (eventDate && !eventTimeSlot) {
-      setError("Pick a time slot for your event date.");
       return;
     }
 
@@ -92,6 +99,70 @@ export default function QuoteRequestForm({
     );
   }
 
+  if (step === 1) {
+    return (
+      <form
+        onSubmit={handleContinue}
+        className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
+      >
+        <h3 className="font-display text-lg font-semibold text-navy">When&apos;s your event?</h3>
+        <p className="mt-1 text-sm text-steel">Pick a date and time slot to get started.</p>
+
+        <label className="mt-5 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
+          </span>
+          <input
+            type="date"
+            required
+            value={eventDate}
+            onChange={(e) => setEventDate(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-navy">Time slot</p>
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
+            {(Object.keys(SLOTS) as SlotKey[]).map((key) => {
+              const active = eventTimeSlot === key;
+              const Icon = key === "MORNING" ? Sun : Moon;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setEventTimeSlot(key)}
+                  className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition ${
+                    active
+                      ? "border-signal bg-signal-light/40 text-navy shadow-sm"
+                      : "border-line text-steel hover:border-signal/50"
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${active ? "text-signal" : "text-steel/60"}`} />
+                  <span className="text-xs font-semibold">{SLOTS[key].label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-4 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-full bg-navy px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+        >
+          Continue
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </form>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -111,7 +182,20 @@ export default function QuoteRequestForm({
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="flex items-center justify-between rounded-lg bg-paper/60 px-3.5 py-2.5 text-sm">
+        <span className="font-medium text-navy">
+          {eventDate} · {eventTimeSlot ? SLOTS[eventTimeSlot].label : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => setStep(1)}
+          className="font-semibold text-signal hover:text-navy"
+        >
+          Change
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className={labelClass}>
           Full name *
           <input
@@ -150,30 +234,6 @@ export default function QuoteRequestForm({
             className={fieldClass}
             placeholder="(512) 555-0100"
           />
-        </label>
-        <label className={labelClass}>
-          Event date
-          <input
-            type="date"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Time slot
-          <select
-            value={eventTimeSlot}
-            onChange={(e) => setEventTimeSlot(e.target.value as SlotKey | "")}
-            className={fieldClass}
-          >
-            <option value="">Select a time slot</option>
-            {slotOptions().map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
         </label>
         <label className={labelClass}>
           Guest count

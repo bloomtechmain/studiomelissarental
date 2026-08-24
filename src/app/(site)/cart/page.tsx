@@ -20,6 +20,7 @@ import {
   Sun,
   Moon,
   Trash2,
+  Upload,
 } from "lucide-react";
 
 type SignatureResult = { name: string; hash: string; ip: string; signedAt: string };
@@ -34,6 +35,26 @@ function todayStr() {
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+
+const SIGNATURE_WIDTH = 772;
+const SIGNATURE_HEIGHT = 229;
+const SIGNATURE_MAX_BYTES = 500 * 1024;
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = url;
+  });
+}
 
 export default function CartPage() {
   const cart = useCart();
@@ -52,11 +73,16 @@ export default function CartPage() {
   const [eventAddress, setEventAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [signatureName, setSignatureName] = useState("");
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [signatureFileError, setSignatureFileError] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmationId, setConfirmationId] = useState<string | null>(null);
-  const [signatureResult, setSignatureResult] = useState<SignatureResult | null>(null);
+  const [signatureResult, setSignatureResult] = useState<
+    (SignatureResult & { imageDataUrl?: string }) | null
+  >(null);
 
   // Debounced + merged rather than replaced: without this, every single +/-
   // click (which changes cart.lines identity) fires an immediate re-check of
@@ -103,18 +129,56 @@ export default function CartPage() {
       setError("Adjust quantities or pick a different date/slot — not everything in your cart is available.");
       return;
     }
+    if (!signatureName.trim()) setSignatureName(name.trim());
     setStep("review");
+  }
+
+  async function handleSignatureFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    setSignatureFileError(null);
+    setSignatureFile(null);
+    setSignaturePreview(null);
+    if (!file) return;
+
+    if (file.type !== "image/png") {
+      setSignatureFileError("Signature must be a PNG file.");
+      return;
+    }
+    if (file.size > SIGNATURE_MAX_BYTES) {
+      setSignatureFileError("Signature file is too large (500KB max).");
+      return;
+    }
+    try {
+      const { width, height } = await readImageDimensions(file);
+      if (width !== SIGNATURE_WIDTH || height !== SIGNATURE_HEIGHT) {
+        setSignatureFileError(
+          `Signature image must be exactly ${SIGNATURE_WIDTH}×${SIGNATURE_HEIGHT}px (this one is ${width}×${height}).`
+        );
+        return;
+      }
+    } catch {
+      setSignatureFileError("Could not read that image file.");
+      return;
+    }
+
+    setSignatureFile(file);
+    setSignaturePreview(URL.createObjectURL(file));
   }
 
   async function handleSignAndSubmit() {
     if (!signatureName.trim()) {
-      setError("Type your name to sign the rental agreement.");
+      setError("Type your printed name to sign.");
+      return;
+    }
+    if (!signatureFile) {
+      setError("Upload your signature image to sign.");
       return;
     }
     setSubmitting(true);
     setError(null);
 
-    const body = {
+    const bookingData = {
       kind: "cart" as const,
       lines: cart.lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
       date,
@@ -127,11 +191,18 @@ export default function CartPage() {
     };
 
     try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Could not read signature image."));
+        reader.readAsDataURL(signatureFile);
       });
+
+      const formData = new FormData();
+      formData.set("data", JSON.stringify(bookingData));
+      formData.set("signature", signatureFile, "signature.png");
+
+      const res = await fetch("/api/bookings", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Could not submit booking request.");
@@ -144,6 +215,7 @@ export default function CartPage() {
           hash: data.signature.hash,
           ip: data.signature.ip,
           signedAt: data.signature.signedAt,
+          imageDataUrl,
         });
       }
       cart.clear();
@@ -184,6 +256,13 @@ export default function CartPage() {
                 ip={signatureResult.ip}
                 signedAt={format(new Date(signatureResult.signedAt), "MMM d, yyyy 'at' h:mm a")}
               />
+              {signatureResult.imageDataUrl && (
+                <img
+                  src={signatureResult.imageDataUrl}
+                  alt="Your signature"
+                  className="mt-3 w-full rounded-lg border border-line bg-white"
+                />
+              )}
             </div>
           )}
 
@@ -244,7 +323,7 @@ export default function CartPage() {
             Review &amp; sign the rental agreement
           </h3>
           <p className="mt-1 text-sm text-steel">
-            Please review the agreement below, then type your name to sign it electronically.
+            Please review the agreement below, then upload your signature to sign it electronically.
           </p>
 
           <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
@@ -265,30 +344,50 @@ export default function CartPage() {
             />
           </div>
 
-          <label className="mt-5 flex flex-col gap-1.5 text-sm font-semibold text-navy">
-            Type your full legal name to sign
+          <p className="mt-5 text-sm font-semibold text-navy">Upload your signature</p>
+          <p className="mt-0.5 text-xs text-steel">
+            PNG only, exactly {SIGNATURE_WIDTH}×{SIGNATURE_HEIGHT}px, under 500KB.
+          </p>
+
+          {signaturePreview ? (
+            <div className="mt-1.5">
+              <img
+                src={signaturePreview}
+                alt="Your uploaded signature"
+                className="w-full rounded-lg border border-line bg-white"
+              />
+              <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-navy hover:text-signal">
+                <Upload className="h-3 w-3" />
+                Replace file
+                <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
+              </label>
+            </div>
+          ) : (
+            <label className="mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line bg-paper/40 px-4 py-8 text-center text-sm text-steel transition hover:border-signal/50">
+              <Upload className="h-5 w-5 text-steel/60" />
+              Click to upload your signature (PNG)
+              <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
+            </label>
+          )}
+          {signatureFileError && (
+            <p className="mt-1.5 text-xs font-medium text-red-600">{signatureFileError}</p>
+          )}
+
+          <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+            Printed name
             <input
               value={signatureName}
               onChange={(e) => setSignatureName(e.target.value)}
-              placeholder="Your full name"
+              placeholder="Your full legal name"
               className={fieldClass}
             />
           </label>
-
-          {signatureName.trim() && (
-            <div className="mt-3 rounded-xl border border-line bg-paper/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
-              <p className="font-signature mt-1 text-3xl leading-tight text-navy">
-                {signatureName.trim()}
-              </p>
-            </div>
-          )}
 
           {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
 
           <button
             type="button"
-            disabled={submitting || !signatureName.trim()}
+            disabled={submitting || !signatureName.trim() || !signatureFile}
             onClick={handleSignAndSubmit}
             className="mt-5 w-full rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >

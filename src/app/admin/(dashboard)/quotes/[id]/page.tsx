@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import QuoteEditor from "./QuoteEditor";
 import AttachCustomer from "./AttachCustomer";
-import { Printer } from "lucide-react";
+import { FileCheck2, Printer } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +43,14 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
         {quote.slot && ` · ${quote.slot === "MORNING" ? "8am–6pm" : "3pm–12am"}`}
         {quote.eventAddress && ` · ${quote.eventAddress}`}
       </p>
+
+      {quote.lead?.signatureName && quote.lead?.signatureCode && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-signal">
+          <FileCheck2 className="h-3.5 w-3.5" />
+          Rental agreement already signed by {quote.lead.signatureName} at the quote-request stage
+          — carries over automatically when this converts to a booking.
+        </p>
+      )}
 
       {!quote.customerId && (
         <div className="mt-4">

@@ -161,6 +161,23 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
         ? await tx.package.findUniqueOrThrow({ where: { id: quote.packageId }, include: { components: true } })
         : null;
 
+      // One rental agreement per customer, not one per stage of the
+      // pipeline: if they already signed it as a lead (quote-request
+      // e-signature), that signature carries straight onto the booking
+      // instead of asking them to sign again.
+      const leadSignature =
+        quote.lead?.signatureName && quote.lead?.signatureCode
+          ? {
+              agreementSigned: true,
+              agreementSignedAt: quote.lead.signedAt ?? undefined,
+              signatureName: quote.lead.signatureName,
+              signatureHash: quote.lead.signatureCode,
+              signatureIp: quote.lead.signatureIp ?? undefined,
+              agreementFileUrl: quote.lead.signatureImageUrl ?? undefined,
+              agreementFileName: quote.lead.signatureImageUrl ? "signature.png" : undefined,
+            }
+          : undefined;
+
       const booking = await tx.booking.create({
         data: {
           customerId: quote.customerId!,
@@ -174,6 +191,7 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
           rentalFee: total,
           createdById: session.id,
           lines: pkg ? { create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })) } : undefined,
+          ...leadSignature,
         },
       });
 

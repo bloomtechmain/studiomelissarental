@@ -77,6 +77,7 @@ model User {
   createdAt      DateTime       @default(now())
   bookingsMade   Booking[]      @relation("CreatedBy")
   leadsCreated   Lead[]         @relation("LeadCreatedBy")
+  leadsCountersigned Lead[]     @relation("LeadCompanySignedBy")
   quotesCreated  Quote[]        @relation("QuoteCreatedBy")
   leadActivities LeadActivity[]
   auditLogs      AuditLog[]
@@ -337,9 +338,9 @@ model Lead {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  // E-signature captured on the public quote-request form: a drawn
-  // signature image plus an AES-256-GCM encrypted identifying code (see
-  // src/lib/signatureEncryption.ts). Unlike the booking flow's one-way
+  // E-signature captured on the public quote-request form: a customer-
+  // uploaded signature image plus an AES-256-GCM encrypted identifying code
+  // (see src/lib/signatureEncryption.ts). Unlike the booking flow's one-way
   // SHA-256 hash, this is deliberately reversible so staff can verify who
   // signed. Every submission is its own Lead row, so one signature can
   // never overwrite or delete another's.
@@ -348,6 +349,16 @@ model Lead {
   signatureIp       String?
   signatureImageUrl String?
   signedAt          DateTime?
+
+  // The company's side of the same two-party agreement — a staff member
+  // reviews the customer's signed request and countersigns, reusing the
+  // one company signature image uploaded in Settings but generating a
+  // fresh AES-256-GCM code per countersign (same mechanism as the
+  // customer's own signature, not a shared/reused code).
+  companySignedAt       DateTime?
+  companySignatureCode  String?
+  companySignedById     String?
+  companySignedBy       User?     @relation("LeadCompanySignedBy", fields: [companySignedById], references: [id])
 
   @@index([stage])
   @@index([followUpOn])

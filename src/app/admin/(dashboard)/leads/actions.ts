@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { generateSignatureCode } from "@/lib/signatureEncryption";
+import { getCompanySignatureUrl } from "@/lib/settings";
 import type { LeadSource, LeadStage } from "@prisma/client";
 
 export async function createLead(input: {
@@ -100,6 +103,58 @@ export async function convertLeadToCustomer(leadId: string) {
   });
   revalidatePath(`/admin/leads/${leadId}`);
   return customerId;
+}
+
+// The company's side of the two-party signature (see the Lead.companySigned*
+// comment in schema.prisma): a staff member reviews the customer's already-
+// signed request, then clicks to countersign. Reuses the one company
+// signature image from Settings, but generates a fresh AES-256-GCM code per
+// countersign — same mechanism as the customer's own signature, just a
+// deliberate per-lead staff action rather than an automatic stamp.
+export async function countersignLeadAsCompany(leadId: string) {
+  const session = await requireSession();
+  requirePermission(session, "leads:write");
+
+  const companySignatureUrl = await getCompanySignatureUrl();
+  if (!companySignatureUrl) {
+    throw new Error("Upload a company signature in Settings before countersigning.");
+  }
+
+  const lead = await prisma.lead.findUniqueOrThrow({ where: { id: leadId } });
+  if (!lead.signatureCode) {
+    throw new Error("This lead hasn't been signed by the customer yet.");
+  }
+  if (lead.companySignatureCode) {
+    throw new Error("This lead has already been countersigned.");
+  }
+
+  const hdrs = await headers();
+  const forwarded = hdrs.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (hdrs.get("x-real-ip") ?? "unknown");
+
+  const signedAt = new Date();
+  const { code } = generateSignatureCode({
+    name: "Studio Melissa Rental, LLC",
+    contact: session.email,
+    ip,
+    timestamp: signedAt,
+  });
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: { companySignedAt: signedAt, companySignatureCode: code, companySignedById: session.id },
+  });
+
+  await prisma.leadActivity.create({
+    data: {
+      leadId,
+      type: "note",
+      content: `Countersigned as Company by ${session.name}`,
+      staffId: session.id,
+    },
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
 }
 
 export async function deleteLead(leadId: string) {

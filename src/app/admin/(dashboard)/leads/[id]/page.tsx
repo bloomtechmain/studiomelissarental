@@ -4,20 +4,26 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { SLOTS, type SlotKey } from "@/lib/slots";
 import { decryptSignatureCode } from "@/lib/signatureEncryption";
+import { getCompanySignatureUrl } from "@/lib/settings";
 import SignatureBlock from "@/components/SignatureBlock";
 import LeadPanel from "./LeadPanel";
+import CountersignButton from "./CountersignButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const lead = await prisma.lead.findUnique({
-    where: { id },
-    include: {
-      activities: { orderBy: { createdAt: "desc" }, include: { staff: true } },
-      quotes: true,
-    },
-  });
+  const [lead, companySignatureUrl] = await Promise.all([
+    prisma.lead.findUnique({
+      where: { id },
+      include: {
+        activities: { orderBy: { createdAt: "desc" }, include: { staff: true } },
+        quotes: true,
+        companySignedBy: true,
+      },
+    }),
+    getCompanySignatureUrl(),
+  ]);
   if (!lead) notFound();
 
   let decryptedSignature: string | null = null;
@@ -26,6 +32,15 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
       decryptedSignature = decryptSignatureCode(lead.signatureCode);
     } catch {
       decryptedSignature = null;
+    }
+  }
+
+  let decryptedCompanySignature: string | null = null;
+  if (lead.companySignatureCode) {
+    try {
+      decryptedCompanySignature = decryptSignatureCode(lead.companySignatureCode);
+    } catch {
+      decryptedCompanySignature = null;
     }
   }
 
@@ -122,6 +137,53 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
               "could not decrypt"
             )}
           </p>
+
+          <div className="mt-5 border-t border-line pt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-steel">
+              Company countersignature
+            </h3>
+            {lead.companySignatureCode ? (
+              <>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <SignatureBlock
+                    name="Studio Melissa Rental, LLC"
+                    hash={lead.companySignatureCode}
+                    ip="—"
+                    signedAt={
+                      lead.companySignedAt
+                        ? format(lead.companySignedAt, "MMM d, yyyy 'at' h:mm a")
+                        : undefined
+                    }
+                  />
+                  {companySignatureUrl && (
+                    <img
+                      src={companySignatureUrl}
+                      alt="Studio Melissa Rental, LLC signature"
+                      className="w-full rounded-lg border border-line bg-white"
+                    />
+                  )}
+                </div>
+                <p className="mt-3 text-xs text-steel">
+                  Countersigned by {lead.companySignedBy?.name ?? "unknown staff"}. Verified:{" "}
+                  {decryptedCompanySignature ? (
+                    <span className="font-mono text-navy">{decryptedCompanySignature}</span>
+                  ) : (
+                    "could not decrypt"
+                  )}
+                </p>
+              </>
+            ) : (
+              <div className="mt-3">
+                <p className="text-sm text-steel">Not yet countersigned by the company.</p>
+                <CountersignButton leadId={lead.id} disabled={!companySignatureUrl} />
+                {!companySignatureUrl && (
+                  <p className="mt-1.5 text-xs text-amber-deep">
+                    Upload a company signature in Settings first.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 

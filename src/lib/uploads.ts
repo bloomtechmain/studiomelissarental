@@ -63,9 +63,9 @@ export async function readItemPhoto(storedName: string): Promise<Buffer> {
   return fs.readFile(filePath);
 }
 
-// Drawn e-signatures from the public quote form. Same PII reasoning as
-// agreements — kept outside /public, served only via the authenticated
-// /api/admin/files/signatures/[filename] route.
+// Customer-uploaded e-signatures from the public quote form. Same PII
+// reasoning as agreements — kept outside /public, served only via the
+// authenticated /api/admin/files/signatures/[filename] route.
 const SIGNATURES_DIR = path.join(process.cwd(), "uploads", "signatures");
 
 export async function saveSignatureImage(
@@ -84,4 +84,15 @@ export async function readSignatureImage(storedName: string): Promise<Buffer> {
     throw new Error("Invalid file path.");
   }
   return fs.readFile(filePath);
+}
+
+// The company's own signature — uploaded once in Settings, reused as the
+// Company-side signature on every countersign action. Fixed filename, so a
+// re-upload simply replaces it rather than accumulating old versions.
+const COMPANY_SIGNATURE_NAME = "company-signature.png";
+
+export async function saveCompanySignature(buffer: Buffer): Promise<{ url: string }> {
+  await fs.mkdir(SIGNATURES_DIR, { recursive: true });
+  await fs.writeFile(path.join(SIGNATURES_DIR, COMPANY_SIGNATURE_NAME), buffer);
+  return { url: `/api/admin/files/signatures/${COMPANY_SIGNATURE_NAME}` };
 }

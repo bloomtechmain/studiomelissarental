@@ -35,3 +35,8 @@ export async function setBookingFeePercent(percent: number): Promise<void> {
     create: { key: "bookingFeePercent", value: String(percent) },
   });
 }
+
+export async function getCompanySignatureUrl(): Promise<string | null> {
+  const row = await prisma.setting.findUnique({ where: { key: "companySignatureUrl" } });
+  return row?.value ?? null;
+}

@@ -6,7 +6,8 @@ import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { setGlobalBufferHours, setBookingFeePercent, getBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
-import { saveAgreementFile, saveItemPhoto } from "@/lib/uploads";
+import { saveAgreementFile, saveItemPhoto, saveCompanySignature } from "@/lib/uploads";
+import { readPngDimensions } from "@/lib/png";
 import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
 import { BookingConflictError } from "@/lib/booking";
 import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
@@ -636,6 +637,38 @@ export async function updateBufferHours(hours: number) {
   const session = await requireSession();
   requirePermission(session, "settings:write");
   await setGlobalBufferHours(hours);
+  revalidatePath("/admin/settings");
+}
+
+// The one company-side signature image, reused for every lead countersign
+// (see countersignLeadAsCompany) — same 772x229 PNG / 500KB spec as the
+// customer-uploaded ones, checked the same way.
+export async function uploadCompanySignature(formData: FormData) {
+  const session = await requireSession();
+  requirePermission(session, "settings:write");
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("No file provided.");
+  }
+  if (file.type !== "image/png") {
+    throw new Error("Signature must be a PNG image.");
+  }
+  if (file.size > 500 * 1024) {
+    throw new Error("Signature image is too large (500KB max).");
+  }
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const dimensions = readPngDimensions(buffer);
+  if (!dimensions || dimensions.width !== 772 || dimensions.height !== 229) {
+    throw new Error("Signature image must be exactly 772x229px.");
+  }
+
+  const { url } = await saveCompanySignature(buffer);
+  await prisma.setting.upsert({
+    where: { key: "companySignatureUrl" },
+    update: { value: url },
+    create: { key: "companySignatureUrl", value: url },
+  });
   revalidatePath("/admin/settings");
 }
 

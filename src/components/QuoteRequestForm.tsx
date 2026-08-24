@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -10,17 +10,36 @@ import {
   Moon,
   PartyPopper,
   Sun,
+  Upload,
 } from "lucide-react";
 import { SLOTS, toDateStr, type SlotKey } from "@/lib/slots";
-import { truncateSignatureCode } from "@/lib/signatureEncryption";
 import LeadAgreementText from "@/components/LeadAgreementText";
-import SignaturePad, { type SignaturePadHandle } from "@/components/SignaturePad";
 import SignatureBlock from "@/components/SignatureBlock";
 import { format } from "date-fns";
 
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+
+const SIGNATURE_WIDTH = 772;
+const SIGNATURE_HEIGHT = 229;
+const SIGNATURE_MAX_BYTES = 500 * 1024;
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image file."));
+    };
+    img.src = url;
+  });
+}
 
 export default function QuoteRequestForm({
   tierOptions,
@@ -44,7 +63,9 @@ export default function QuoteRequestForm({
   const [website, setWebsite] = useState(""); // honeypot
 
   const [signatureName, setSignatureName] = useState("");
-  const signaturePadRef = useRef<SignaturePadHandle>(null);
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [signatureFileError, setSignatureFileError] = useState<string | null>(null);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
@@ -83,26 +104,57 @@ export default function QuoteRequestForm({
     setStep(3);
   }
 
+  async function handleSignatureFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    setSignatureFileError(null);
+    setSignatureFile(null);
+    setSignaturePreview(null);
+    if (!file) return;
+
+    if (file.type !== "image/png") {
+      setSignatureFileError("Signature must be a PNG file.");
+      return;
+    }
+    if (file.size > SIGNATURE_MAX_BYTES) {
+      setSignatureFileError("Signature file is too large (500KB max).");
+      return;
+    }
+    try {
+      const { width, height } = await readImageDimensions(file);
+      if (width !== SIGNATURE_WIDTH || height !== SIGNATURE_HEIGHT) {
+        setSignatureFileError(
+          `Signature image must be exactly ${SIGNATURE_WIDTH}×${SIGNATURE_HEIGHT}px (this one is ${width}×${height}).`
+        );
+        return;
+      }
+    } catch {
+      setSignatureFileError("Could not read that image file.");
+      return;
+    }
+
+    setSignatureFile(file);
+    setSignaturePreview(URL.createObjectURL(file));
+  }
+
   async function handleSignAndSubmit() {
     setError(null);
     if (!signatureName.trim()) {
       setError("Type your printed name to sign.");
       return;
     }
-    const pad = signaturePadRef.current;
-    if (!pad || pad.isEmpty()) {
-      setError("Draw your signature above to sign.");
+    if (!signatureFile) {
+      setError("Upload your signature image to sign.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const blob = await pad.exportPng();
       const imageDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = () => reject(new Error("Could not read signature image."));
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(signatureFile);
       });
 
       const formData = new FormData();
@@ -125,7 +177,7 @@ export default function QuoteRequestForm({
           website,
         })
       );
-      formData.set("signature", blob, "signature.png");
+      formData.set("signature", signatureFile, "signature.png");
 
       const res = await fetch("/api/leads", { method: "POST", body: formData });
       const resData = await res.json();
@@ -430,15 +482,34 @@ export default function QuoteRequestForm({
         />
       </div>
 
-      <p className="mt-5 text-sm font-semibold text-navy">Draw your signature</p>
-      <SignaturePad ref={signaturePadRef} className="mt-1.5" />
-      <button
-        type="button"
-        onClick={() => signaturePadRef.current?.clear()}
-        className="mt-1.5 text-xs font-semibold text-steel hover:text-navy"
-      >
-        Clear
-      </button>
+      <p className="mt-5 text-sm font-semibold text-navy">Upload your signature</p>
+      <p className="mt-0.5 text-xs text-steel">
+        PNG only, exactly {SIGNATURE_WIDTH}×{SIGNATURE_HEIGHT}px, under 500KB.
+      </p>
+
+      {signaturePreview ? (
+        <div className="mt-1.5">
+          <img
+            src={signaturePreview}
+            alt="Your uploaded signature"
+            className="w-full rounded-lg border border-line bg-white"
+          />
+          <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-navy hover:text-signal">
+            <Upload className="h-3 w-3" />
+            Replace file
+            <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
+          </label>
+        </div>
+      ) : (
+        <label className="mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line bg-paper/40 px-4 py-8 text-center text-sm text-steel transition hover:border-signal/50">
+          <Upload className="h-5 w-5 text-steel/60" />
+          Click to upload your signature (PNG)
+          <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
+        </label>
+      )}
+      {signatureFileError && (
+        <p className="mt-1.5 text-xs font-medium text-red-600">{signatureFileError}</p>
+      )}
 
       <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy">
         Printed name

@@ -73,10 +73,27 @@ export default function LeadAgreementText({
 
       <AgreementBody />
 
+      <h4 className="mt-4 font-semibold text-navy">Signatures</h4>
+      <p className="mt-1 text-steel">
+        By signing below, both parties acknowledge they have read, understood, and agree to be
+        bound by the terms of this Agreement.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-line bg-paper/40 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-steel">Company</p>
+          <p className="mt-1 font-medium text-navy">Studio Melissa Rental, LLC</p>
+        </div>
+        <div className="rounded-lg border border-line bg-paper/40 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-steel">Renter</p>
+          <p className="mt-1 font-medium text-navy">{renterName || "—"}</p>
+        </div>
+      </div>
+
       <p className="mt-4 text-xs italic text-steel">
-        By drawing your signature and clicking &quot;Sign &amp; request quote&quot; below, you
+        By uploading your signature and clicking &quot;Sign &amp; request quote&quot; below, you
         acknowledge you have read, understood, and agree to be bound by the terms of this
-        Agreement, and that your signature and printed name constitute your electronic signature.
+        Agreement, and that your uploaded signature and printed name constitute your electronic
+        signature.
       </p>
     </div>
   );

@@ -217,11 +217,16 @@ model Booking {
   // E-signature evidence, captured when a customer signs online at checkout
   // (as opposed to the staff-side checkbox/upload path above, which both
   // still set agreementSigned/agreementSignedAt — this is supplementary,
-  // not a replacement). Hash/IP are computed server-side at booking
-  // creation, never trusted from the client.
-  signatureName String?
-  signatureHash String?
-  signatureIp   String?
+  // not a replacement). Same mechanism as the Lead's e-signature (see the
+  // comment there): customer-uploaded 772x229 PNG + AES-256-GCM encrypted
+  // code (despite the field name, signatureHash holds that code, not a
+  // one-way hash — kept named this way rather than migrated, since it's an
+  // internal column name with no user-facing meaning). Computed server-side
+  // at booking creation, never trusted from the client.
+  signatureName     String?
+  signatureHash     String?
+  signatureIp       String?
+  signatureImageUrl String?
 
   // Same idea for the two payment-gated transitions (3.4): Confirmed
   // requires the non-refundable booking fee to be on record, Paid in full

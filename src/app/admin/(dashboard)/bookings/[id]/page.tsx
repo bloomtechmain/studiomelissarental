@@ -13,6 +13,7 @@ import ChecklistPanel from "./ChecklistPanel";
 import { getBookingFeePercent } from "@/lib/settings";
 import { computeCancellationRefund } from "@/lib/cancellation";
 import { SLOTS, type SlotKey } from "@/lib/slots";
+import { decryptSignatureCode } from "@/lib/signatureEncryption";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,15 @@ export default async function AdminBookingDetailPage({
     }),
   ]);
   if (!booking) notFound();
+
+  let decryptedSignature: string | null = null;
+  if (booking.signatureHash) {
+    try {
+      decryptedSignature = decryptSignatureCode(booking.signatureHash);
+    } catch {
+      decryptedSignature = null;
+    }
+  }
 
   const chargesTotal = booking.charges.reduce((s, c) => s + Number(c.unitPrice) * c.quantity, 0);
   const showCancellationReference = !["CANCELLED", "COMPLETED"].includes(booking.status);
@@ -131,6 +141,8 @@ export default async function AdminBookingDetailPage({
           signatureName={booking.signatureName}
           signatureHash={booking.signatureHash}
           signatureIp={booking.signatureIp}
+          signatureImageUrl={booking.signatureImageUrl}
+          decryptedSignature={decryptedSignature}
         />
 
         <ChecklistPanel

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
 import { slotWindow } from "@/lib/slots";
-import { generateSignatureHash } from "@/lib/signature";
-import { randomBytes } from "crypto";
+import { generateSignatureCode } from "@/lib/signatureEncryption";
+import { saveSignatureImage } from "@/lib/uploads";
 import type { BookingInput } from "@/lib/validation";
 import { Prisma } from "@prisma/client";
 
@@ -53,24 +53,30 @@ async function resolveCustomer(
   });
 }
 
-export async function createBooking(input: BookingInput, signerIp: string) {
+export async function createBooking(
+  input: BookingInput,
+  signerIp: string,
+  signatureImageBuffer: Buffer
+) {
   const { startAt, endAt } = slotWindow(input.date, input.slot);
 
   // Same signature evidence regardless of which branch below actually
   // creates the booking — computed once so both stay identical.
   const signedAt = new Date();
-  const signatureHash = generateSignatureHash({
+  const { code, seed } = generateSignatureCode({
     name: input.signatureName,
+    contact: input.customer.email || input.customer.phone,
     ip: signerIp,
     timestamp: signedAt,
-    bookingSeed: randomBytes(8).toString("hex"),
   });
+  const { url: signatureImageUrl } = await saveSignatureImage(seed, signatureImageBuffer);
   const signatureFields = {
     agreementSigned: true,
     agreementSignedAt: signedAt,
     signatureName: input.signatureName,
-    signatureHash,
+    signatureHash: code,
     signatureIp: signerIp,
+    signatureImageUrl,
   };
 
   try {

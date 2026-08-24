@@ -173,8 +173,7 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
               signatureName: quote.lead.signatureName,
               signatureHash: quote.lead.signatureCode,
               signatureIp: quote.lead.signatureIp ?? undefined,
-              agreementFileUrl: quote.lead.signatureImageUrl ?? undefined,
-              agreementFileName: quote.lead.signatureImageUrl ? "signature.png" : undefined,
+              signatureImageUrl: quote.lead.signatureImageUrl ?? undefined,
             }
           : undefined;
 

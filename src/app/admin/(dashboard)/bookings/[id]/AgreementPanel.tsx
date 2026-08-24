@@ -18,6 +18,8 @@ export default function AgreementPanel({
   signatureName,
   signatureHash,
   signatureIp,
+  signatureImageUrl,
+  decryptedSignature,
 }: {
   bookingId: string;
   agreementSigned: boolean;
@@ -29,6 +31,8 @@ export default function AgreementPanel({
   signatureName: string | null;
   signatureHash: string | null;
   signatureIp: string | null;
+  signatureImageUrl: string | null;
+  decryptedSignature: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -98,12 +102,29 @@ export default function AgreementPanel({
 
       {signatureName && signatureHash && signatureIp && (
         <div className="mt-3">
-          <SignatureBlock
-            name={signatureName}
-            hash={signatureHash}
-            ip={signatureIp}
-            signedAt={agreementSignedAt ? format(agreementSignedAt, "MMM d, yyyy 'at' h:mm a") : undefined}
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SignatureBlock
+              name={signatureName}
+              hash={signatureHash}
+              ip={signatureIp}
+              signedAt={agreementSignedAt ? format(agreementSignedAt, "MMM d, yyyy 'at' h:mm a") : undefined}
+            />
+            {signatureImageUrl && (
+              <img
+                src={signatureImageUrl}
+                alt={`${signatureName}'s signature`}
+                className="w-full rounded-lg border border-line bg-white"
+              />
+            )}
+          </div>
+          <p className="mt-2 text-xs text-steel">
+            Verified:{" "}
+            {decryptedSignature ? (
+              <span className="font-mono text-navy">{decryptedSignature}</span>
+            ) : (
+              "could not decrypt"
+            )}
+          </p>
         </div>
       )}
 

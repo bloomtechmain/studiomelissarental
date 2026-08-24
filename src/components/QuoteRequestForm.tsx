@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle2, Loader2, PartyPopper } from "lucide-react";
+import { slotOptions, type SlotKey } from "@/lib/slots";
 
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
@@ -19,6 +20,7 @@ export default function QuoteRequestForm({
   const [phone, setPhone] = useState("");
   const [org, setOrg] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [eventTimeSlot, setEventTimeSlot] = useState<SlotKey | "">("");
   const [roomSize, setRoomSize] = useState("");
   const [guestCount, setGuestCount] = useState("");
   const [recommendedTier, setRecommendedTier] = useState(defaultTier ?? "");
@@ -38,6 +40,10 @@ export default function QuoteRequestForm({
       setError("Give us an email or a phone number so we can get back to you.");
       return;
     }
+    if (eventDate && !eventTimeSlot) {
+      setError("Pick a time slot for your event date.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -50,6 +56,7 @@ export default function QuoteRequestForm({
           phone,
           org,
           eventDate,
+          eventTimeSlot,
           roomSize,
           guestCount: guestCount ? Number(guestCount) : undefined,
           recommendedTier,
@@ -152,6 +159,21 @@ export default function QuoteRequestForm({
             onChange={(e) => setEventDate(e.target.value)}
             className={fieldClass}
           />
+        </label>
+        <label className={labelClass}>
+          Time slot
+          <select
+            value={eventTimeSlot}
+            onChange={(e) => setEventTimeSlot(e.target.value as SlotKey | "")}
+            className={fieldClass}
+          >
+            <option value="">Select a time slot</option>
+            {slotOptions().map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className={labelClass}>
           Guest count

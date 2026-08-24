@@ -31,9 +31,11 @@ export default async function PackagePage({ params }: { params: Promise<{ id: st
           <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-navy">
             {pkg.name}
           </h1>
-          <p className="mt-4 font-display text-2xl font-semibold text-navy">
-            {Number(pkg.price) > 0 ? `$${Number(pkg.price).toFixed(0)}` : "Custom quote"}
-          </p>
+          {(Number(pkg.price) > 0 || pkg.tier === 4) && (
+            <p className="mt-4 font-display text-2xl font-semibold text-navy">
+              {Number(pkg.price) > 0 ? `$${Number(pkg.price).toFixed(0)}` : "Custom quote"}
+            </p>
+          )}
           {pkg.description && (
             <p className="mt-5 max-w-md leading-relaxed text-steel">{pkg.description}</p>
           )}

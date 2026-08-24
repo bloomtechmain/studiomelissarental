@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       phone: data.phone || undefined,
       org: data.org || undefined,
       eventDate: data.eventDate ? new Date(`${data.eventDate}T00:00:00`) : undefined,
+      eventTimeSlot: data.eventTimeSlot || undefined,
       roomSize: data.roomSize || undefined,
       guestCount: data.guestCount || undefined,
       recommendedTier: data.recommendedTier || undefined,

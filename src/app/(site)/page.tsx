@@ -146,18 +146,20 @@ export default async function HomePage() {
 
                   <p className="mt-4 text-sm leading-relaxed text-steel">{pkg.description}</p>
 
-                  <div className="mt-5 border-t border-line pt-5">
-                    {Number(pkg.price) > 0 ? (
-                      <p>
-                        <span className="font-display text-3xl font-semibold text-navy">
-                          ${Number(pkg.price).toFixed(0)}
-                        </span>
-                        <span className="text-sm text-steel"> / rental</span>
-                      </p>
-                    ) : (
-                      <p className="font-display text-2xl font-semibold text-navy">Custom quote</p>
-                    )}
-                  </div>
+                  {(Number(pkg.price) > 0 || pkg.tier === 4) && (
+                    <div className="mt-5 border-t border-line pt-5">
+                      {Number(pkg.price) > 0 ? (
+                        <p>
+                          <span className="font-display text-3xl font-semibold text-navy">
+                            ${Number(pkg.price).toFixed(0)}
+                          </span>
+                          <span className="text-sm text-steel"> / rental</span>
+                        </p>
+                      ) : (
+                        <p className="font-display text-2xl font-semibold text-navy">Custom quote</p>
+                      )}
+                    </div>
+                  )}
 
                   <ul className="mt-4 flex-1 space-y-2.5">
                     {pkg.components.slice(0, 4).map((c) => (

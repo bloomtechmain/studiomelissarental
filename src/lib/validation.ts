@@ -71,6 +71,7 @@ export const leadInputSchema = z
     phone: z.string().trim().max(50).optional().or(z.literal("")),
     org: z.string().trim().max(200).optional().or(z.literal("")),
     eventDate: dateStrSchema.optional().or(z.literal("")),
+    eventTimeSlot: z.enum(["MORNING", "AFTERNOON"]).optional().or(z.literal("")),
     roomSize: z.string().trim().max(200).optional().or(z.literal("")),
     guestCount: z.coerce.number().int().min(0).max(100000).optional(),
     recommendedTier: z.string().trim().max(100).optional().or(z.literal("")),

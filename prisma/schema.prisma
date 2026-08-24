@@ -318,6 +318,7 @@ model Lead {
   phone           String?
   org             String?
   eventDate       DateTime?
+  eventTimeSlot   String?
   roomSize        String?
   guestCount      Int?
   recommendedTier String?

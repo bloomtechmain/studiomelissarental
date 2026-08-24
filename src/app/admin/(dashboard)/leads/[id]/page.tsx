@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import { SLOTS, type SlotKey } from "@/lib/slots";
 import LeadPanel from "./LeadPanel";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,12 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
             <div className="flex justify-between">
               <dt className="text-steel">Event date</dt>
               <dd className="text-navy">{lead.eventDate ? format(lead.eventDate, "MMM d, yyyy") : "—"}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-steel">Time slot</dt>
+              <dd className="text-navy">
+                {lead.eventTimeSlot ? SLOTS[lead.eventTimeSlot as SlotKey]?.label ?? lead.eventTimeSlot : "—"}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-steel">Room size</dt>

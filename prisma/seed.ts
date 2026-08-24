@@ -75,43 +75,34 @@ async function main() {
     }
   }
 
-  const packages = [
+  type PackageSeed = {
+    name: string;
+    tier: number;
+    price: number;
+    description: string;
+    components: { item: string; qty: number }[];
+  };
+  const packages: PackageSeed[] = [
     {
       name: "Huddle",
       tier: 1,
-      price: 150,
-      description: "Small room, up to ~40 guests. Two tops, one sub, compact mixer.",
-      components: [
-        { item: "Yamaha DXR15 mk3", qty: 2 },
-        { item: "Yamaha DXS15 mk2 Sub", qty: 1 },
-        { item: "Behringer X32 Compact", qty: 1 },
-        { item: "Shure SLXD Wireless Handheld", qty: 1 },
-      ],
+      price: 0,
+      description: "Small room, up to ~40 guests.",
+      components: [],
     },
     {
       name: "Gathering",
       tier: 2,
-      price: 275,
-      description: "Mid-size room, up to ~120 guests. Four tops, two subs, mixer, two mics.",
-      components: [
-        { item: "Yamaha DXR15 mk3", qty: 2 },
-        { item: "QSC K12.2", qty: 2 },
-        { item: "Yamaha DXS15 mk2 Sub", qty: 2 },
-        { item: "Behringer X32 Compact", qty: 1 },
-        { item: "Shure SLXD Wireless Handheld", qty: 2 },
-      ],
+      price: 0,
+      description: "Mid-size room, up to ~120 guests.",
+      components: [],
     },
     {
       name: "Hall",
       tier: 3,
-      price: 425,
-      description: "Large hall, up to ~300 guests. Full rig, four mics.",
-      components: [
-        { item: "QSC K12.2", qty: 4 },
-        { item: "Yamaha DXS15 mk2 Sub", qty: 2 },
-        { item: "Behringer X32 Compact", qty: 2 },
-        { item: "Shure SLXD Wireless Handheld", qty: 4 },
-      ],
+      price: 0,
+      description: "Large hall, up to ~300 guests.",
+      components: [],
     },
     {
       name: "Field",
@@ -132,6 +123,10 @@ async function main() {
         price: pkg.price,
         description: pkg.description,
       },
+    });
+    const keepItemIds = pkg.components.map((c) => itemIds[c.item]);
+    await prisma.packageItem.deleteMany({
+      where: { packageId: created.id, itemId: { notIn: keepItemIds.length ? keepItemIds : [""] } },
     });
     for (const comp of pkg.components) {
       await prisma.packageItem.upsert({

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { SLOTS, type SlotKey } from "@/lib/slots";
+import { decryptSignatureCode } from "@/lib/signatureEncryption";
+import SignatureBlock from "@/components/SignatureBlock";
 import LeadPanel from "./LeadPanel";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,15 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
     },
   });
   if (!lead) notFound();
+
+  let decryptedSignature: string | null = null;
+  if (lead.signatureCode) {
+    try {
+      decryptedSignature = decryptSignatureCode(lead.signatureCode);
+    } catch {
+      decryptedSignature = null;
+    }
+  }
 
   return (
     <div className="max-w-3xl">
@@ -44,6 +55,10 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
               <dd className="text-navy">
                 {lead.eventTimeSlot ? SLOTS[lead.eventTimeSlot as SlotKey]?.label ?? lead.eventTimeSlot : "—"}
               </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-steel">Event name / venue</dt>
+              <dd className="text-navy">{lead.eventName || "—"}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-steel">Room size</dt>
@@ -80,6 +95,35 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
           </ul>
         </section>
       </div>
+
+      {lead.signatureName && lead.signatureCode && (
+        <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-navy">Signature</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <SignatureBlock
+              name={lead.signatureName}
+              hash={lead.signatureCode}
+              ip={lead.signatureIp ?? "unknown"}
+              signedAt={lead.signedAt ? format(lead.signedAt, "MMM d, yyyy 'at' h:mm a") : undefined}
+            />
+            {lead.signatureImageUrl && (
+              <img
+                src={lead.signatureImageUrl}
+                alt={`${lead.signatureName}'s signature`}
+                className="w-full rounded-lg border border-line bg-white"
+              />
+            )}
+          </div>
+          <p className="mt-3 text-xs text-steel">
+            Verified:{" "}
+            {decryptedSignature ? (
+              <span className="font-mono text-navy">{decryptedSignature}</span>
+            ) : (
+              "could not decrypt"
+            )}
+          </p>
+        </section>
+      )}
 
       <div className="mt-6">
         <LeadPanel

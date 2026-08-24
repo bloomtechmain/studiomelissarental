@@ -72,11 +72,13 @@ export const leadInputSchema = z
     org: z.string().trim().max(200).optional().or(z.literal("")),
     eventDate: dateStrSchema.optional().or(z.literal("")),
     eventTimeSlot: z.enum(["MORNING", "AFTERNOON"]).optional().or(z.literal("")),
+    eventName: z.string().trim().max(200).optional().or(z.literal("")),
     roomSize: z.string().trim().max(200).optional().or(z.literal("")),
     guestCount: z.coerce.number().int().min(0).max(100000).optional(),
     recommendedTier: z.string().trim().max(100).optional().or(z.literal("")),
     eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
     notes: z.string().trim().max(2000).optional().or(z.literal("")),
+    signatureName: z.string().trim().min(1, "Printed name is required to sign.").max(200),
     // honeypot — real visitors never see or fill this field
     website: z.string().max(200).optional().or(z.literal("")),
   })

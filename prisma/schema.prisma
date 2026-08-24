@@ -319,6 +319,7 @@ model Lead {
   org             String?
   eventDate       DateTime?
   eventTimeSlot   String?
+  eventName       String?
   roomSize        String?
   guestCount      Int?
   recommendedTier String?
@@ -335,6 +336,18 @@ model Lead {
   createdBy       User?          @relation("LeadCreatedBy", fields: [createdById], references: [id])
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  // E-signature captured on the public quote-request form: a drawn
+  // signature image plus an AES-256-GCM encrypted identifying code (see
+  // src/lib/signatureEncryption.ts). Unlike the booking flow's one-way
+  // SHA-256 hash, this is deliberately reversible so staff can verify who
+  // signed. Every submission is its own Lead row, so one signature can
+  // never overwrite or delete another's.
+  signatureName     String?
+  signatureCode     String?
+  signatureIp       String?
+  signatureImageUrl String?
+  signedAt          DateTime?
 
   @@index([stage])
   @@index([followUpOn])

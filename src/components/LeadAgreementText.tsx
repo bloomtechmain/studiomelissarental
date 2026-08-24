@@ -1,30 +1,30 @@
 import AgreementBody from "@/components/AgreementBody";
 
-// The actual Studio Melissa Rental agreement text (from
-// Studio_Melissa_Rental_Agreement.docx), rendered with the booking's own
-// details filled into section 1 instead of blank lines — everything below
-// that is the fixed legal text (AgreementBody), shared with the quote-request
-// signing flow (see LeadAgreementText).
-export default function RentalAgreementText({
+// Same fixed agreement as RentalAgreementText (used at booking checkout),
+// but with a "1. Rental Details" header suited to a quote request — no
+// assigned equipment/delivery times yet, just what the customer entered.
+export default function LeadAgreementText({
   renterName,
   org,
   phone,
   email,
   eventName,
   eventAddress,
-  equipmentLines,
-  deliveryLabel,
-  pickupLabel,
+  recommendedTier,
+  eventDateLabel,
+  eventTimeSlotLabel,
+  guestCount,
 }: {
   renterName: string;
   org?: string;
-  phone: string;
+  phone?: string;
   email?: string;
   eventName?: string;
   eventAddress?: string;
-  equipmentLines: string[];
-  deliveryLabel: string;
-  pickupLabel: string;
+  recommendedTier?: string;
+  eventDateLabel?: string;
+  eventTimeSlotLabel?: string;
+  guestCount?: string;
 }) {
   const Field = ({ label, value }: { label: string; value?: string }) => (
     <div className="flex justify-between gap-4 border-b border-line py-1.5 text-sm">
@@ -47,8 +47,8 @@ export default function RentalAgreementText({
         or &quot;us&quot;), and the customer identified below (&quot;Renter,&quot; &quot;you&quot;).
       </p>
       <p className="mt-2 text-steel">
-        By signing below, or by accepting delivery of the Equipment, Renter agrees to be bound by
-        the terms of this Agreement in full.
+        By signing below, Renter agrees to be bound by the terms of this Agreement in full, pending
+        final confirmation of package, pricing, and rental period with Company staff.
       </p>
 
       <h4 className="mt-4 font-semibold text-navy">1. Rental Details</h4>
@@ -58,31 +58,25 @@ export default function RentalAgreementText({
         <Field label="Phone / Email" value={[phone, email].filter(Boolean).join(" / ")} />
         <Field label="Event name / venue" value={eventName} />
         <Field label="Event address" value={eventAddress} />
-        <div className="flex justify-between gap-4 border-b border-line py-1.5 text-sm">
-          <span className="text-steel">Equipment</span>
-          <span className="text-right font-medium text-navy">
-            {equipmentLines.length > 0 ? (
-              equipmentLines.map((line, i) => <div key={i}>{line}</div>)
-            ) : (
-              <>—</>
-            )}
-          </span>
-        </div>
-        <Field label="Delivery" value={deliveryLabel} />
-        <Field label="Pickup" value={pickupLabel} />
+        <Field label="Package tier" value={recommendedTier || "Not sure — to be recommended"} />
+        <Field
+          label="Requested date"
+          value={[eventDateLabel, eventTimeSlotLabel].filter(Boolean).join(" · ")}
+        />
+        <Field label="Guest count" value={guestCount} />
         <Field label="Rental fee / deposit" value="To be confirmed by Studio Melissa Rental staff" />
       </div>
       <p className="mt-2 text-xs text-steel">
-        The specific equipment provided under this rental is listed on the attached Equipment
-        Schedule / delivery ticket, which is incorporated into this Agreement by reference.
+        This is a quote request, not a confirmed booking. Specific equipment, pricing, and delivery
+        times will be finalized with Company staff before the rental period begins.
       </p>
 
       <AgreementBody />
 
       <p className="mt-4 text-xs italic text-steel">
-        By typing your name and clicking &quot;Sign agreement&quot; below, you acknowledge you have
-        read, understood, and agree to be bound by the terms of this Agreement, and that your typed
-        name constitutes your electronic signature.
+        By drawing your signature and clicking &quot;Sign &amp; request quote&quot; below, you
+        acknowledge you have read, understood, and agree to be bound by the terms of this
+        Agreement, and that your signature and printed name constitute your electronic signature.
       </p>
     </div>
   );

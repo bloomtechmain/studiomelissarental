@@ -18,7 +18,8 @@ jobs:
             set -e
             cd ~/app
             git pull origin main
-            npm install
+            npm ci
+            npx prisma generate
             npx prisma migrate deploy
             npm run build
             pm2 restart studio-melissa

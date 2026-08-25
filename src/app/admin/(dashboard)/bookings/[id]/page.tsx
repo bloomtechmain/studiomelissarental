@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import BookingStatusActions from "./BookingStatusActions";
 import PaymentPanel from "./PaymentPanel";
+import OnlinePaymentPanel from "./OnlinePaymentPanel";
 import AgreementPanel from "./AgreementPanel";
 import ChargesPanel from "./ChargesPanel";
 import RefundPanel from "./RefundPanel";
@@ -32,6 +33,7 @@ export default async function AdminBookingDetailPage({
         lines: { include: { item: true } },
         units: { include: { unit: { include: { item: true } } } },
         charges: { orderBy: { createdAt: "asc" } },
+        stripePayments: { orderBy: { createdAt: "desc" } },
       },
     }),
     getBookingFeePercent(),
@@ -55,6 +57,8 @@ export default async function AdminBookingDetailPage({
   }
 
   const chargesTotal = booking.charges.reduce((s, c) => s + Number(c.unitPrice) * c.quantity, 0);
+  const balanceDue =
+    Number(booking.rentalFee) + Number(booking.securityDeposit) + chargesTotal - Number(booking.amountPaid);
   const showCancellationReference = !["CANCELLED", "COMPLETED"].includes(booking.status);
   const refund = computeCancellationRefund({
     startAt: booking.startAt,
@@ -128,6 +132,17 @@ export default async function AdminBookingDetailPage({
           chargesTotal={chargesTotal}
           status={booking.status}
           depositOverridden={booking.depositOverridden}
+        />
+
+        <OnlinePaymentPanel
+          bookingId={booking.id}
+          balanceDue={balanceDue}
+          payments={booking.stripePayments.map((p) => ({
+            id: p.id,
+            amount: Number(p.amount),
+            status: p.status,
+            createdAt: p.createdAt,
+          }))}
         />
 
         <AgreementPanel

@@ -68,6 +68,13 @@ enum PaymentMethod {
   OTHER
 }
 
+enum StripePaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id             String         @id @default(cuid())
   name           String
@@ -256,6 +263,13 @@ model Booking {
 
   quote Quote?
 
+  // Online payments taken via Stripe Checkout — separate from the manual
+  // rentalFee/securityDeposit/amountPaid fields above. A completed Stripe
+  // payment adds to amountPaid (see the webhook handler); this list is the
+  // record of how much of amountPaid actually came through Stripe vs. cash/
+  // check/etc. recorded by hand.
+  stripePayments StripePayment[]
+
   @@index([startAt, endAt])
   @@index([date])
 }
@@ -304,6 +318,25 @@ model BookingUnit {
 
   @@unique([bookingId, unitId])
   @@index([unitId])
+}
+
+// A single Stripe Checkout Session created against a booking for a staff-
+// chosen amount (typically the current balance due — see PaymentPanel).
+// PENDING until the webhook confirms it one way or the other; never trust
+// client-side redirect params alone for "did this actually get paid".
+model StripePayment {
+  id                    String              @id @default(cuid())
+  bookingId             String
+  booking               Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount                Decimal             @db.Decimal(10, 2)
+  status                StripePaymentStatus @default(PENDING)
+  stripeCheckoutSessionId String            @unique
+  stripePaymentIntentId  String?
+  createdById           String?
+  createdAt             DateTime            @default(now())
+  completedAt           DateTime?
+
+  @@index([bookingId])
 }
 
 model Setting {

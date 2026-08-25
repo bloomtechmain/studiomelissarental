@@ -11,6 +11,7 @@ import { readPngDimensions } from "@/lib/png";
 import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
 import { BookingConflictError } from "@/lib/booking";
 import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
+import { getStripe } from "@/lib/stripe";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import type { BookingStatus, UnitStatus, PaymentMethod, Role } from "@prisma/client";
@@ -144,6 +145,72 @@ export async function updateBookingFinancials(
     actorId: session.id,
   });
   revalidatePath(`/admin/bookings/${bookingId}`);
+}
+
+// --- Online payments (Stripe Checkout) --------------------------------
+
+// Creates a Stripe-hosted Checkout page for a staff-chosen amount (usually
+// the current balance due) and records it as PENDING. amountPaid is NOT
+// updated here — only the webhook, once Stripe confirms the payment
+// actually went through, is trusted for that (see /api/webhooks/stripe).
+// `origin` is passed from the client (window.location.origin) the same way
+// share links are built elsewhere — see QuoteEditor's shareUrl.
+export async function createStripePaymentLink(
+  bookingId: string,
+  amount: number,
+  origin: string
+): Promise<string> {
+  const session = await requireSession();
+  requirePermission(session, "bookings:financials:write");
+
+  if (!(amount > 0)) {
+    throw new Error("Amount must be greater than $0.");
+  }
+
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+
+  const checkoutSession = await getStripe().checkout.sessions.create({
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Studio Melissa Rental — ${booking.eventName || "booking"} payment`,
+          },
+          unit_amount: Math.round(amount * 100),
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${origin}/pay/success?booking=${bookingId}`,
+    cancel_url: `${origin}/pay/cancelled?booking=${bookingId}`,
+    metadata: { bookingId },
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error("Stripe did not return a checkout URL.");
+  }
+
+  await prisma.stripePayment.create({
+    data: {
+      bookingId,
+      amount,
+      stripeCheckoutSessionId: checkoutSession.id,
+      createdById: session.id,
+    },
+  });
+
+  await logAudit({
+    entity: "Booking",
+    entityId: bookingId,
+    action: "stripe_payment_link_created",
+    detail: `Created Stripe payment link for $${amount.toFixed(2)}`,
+    actorId: session.id,
+  });
+
+  revalidatePath(`/admin/bookings/${bookingId}`);
+  return checkoutSession.url;
 }
 
 export async function updateBookingRefund(

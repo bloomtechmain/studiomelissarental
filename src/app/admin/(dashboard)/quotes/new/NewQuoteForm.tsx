@@ -11,21 +11,31 @@ export default function NewQuoteForm({
   customers,
   packages,
   defaultLeadId,
+  defaultPackageId,
+  defaultEventName,
+  defaultEventAddress,
+  defaultEventDate,
+  defaultPickupTime,
 }: {
   leads: Option[];
   customers: Option[];
   packages: (Option & { price: number })[];
   defaultLeadId?: string;
+  defaultPackageId?: string;
+  defaultEventName?: string;
+  defaultEventAddress?: string;
+  defaultEventDate?: string;
+  defaultPickupTime?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [leadId, setLeadId] = useState(defaultLeadId ?? "");
   const [customerId, setCustomerId] = useState("");
-  const [packageId, setPackageId] = useState("");
-  const [eventName, setEventName] = useState("");
-  const [eventAddress, setEventAddress] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [pickupTime, setPickupTime] = useState("08:00");
+  const [packageId, setPackageId] = useState(defaultPackageId ?? "");
+  const [eventName, setEventName] = useState(defaultEventName ?? "");
+  const [eventAddress, setEventAddress] = useState(defaultEventAddress ?? "");
+  const [eventDate, setEventDate] = useState(defaultEventDate ?? "");
+  const [pickupTime, setPickupTime] = useState(defaultPickupTime ?? "08:00");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +80,9 @@ export default function NewQuoteForm({
         </label>
         <label className="col-span-2 flex flex-col gap-1 text-sm font-medium text-navy">
           Package tier
+          {defaultPackageId && (
+            <span className="text-xs font-normal text-signal">Pre-filled from what the customer requested — double-check before creating.</span>
+          )}
           <select value={packageId} onChange={(e) => setPackageId(e.target.value)} className="rounded border border-line px-3 py-2">
             <option value="">Custom build — add line items manually</option>
             {packages.map((p) => (

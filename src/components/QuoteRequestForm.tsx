@@ -11,7 +11,7 @@ import {
   PartyPopper,
   Upload,
 } from "lucide-react";
-import { toDateStr } from "@/lib/rental";
+import { toDateStr, RENTAL_HOURS } from "@/lib/rental";
 import LeadAgreementText from "@/components/LeadAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
 import { format } from "date-fns";
@@ -62,6 +62,13 @@ export default function QuoteRequestForm({
   const [org, setOrg] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState(DEFAULT_PICKUP_TIME);
+  const dropoffLabel =
+    eventDate && eventTime
+      ? format(
+          new Date(new Date(`${eventDate}T${eventTime}`).getTime() + RENTAL_HOURS * 3600_000),
+          "EEE, MMM d 'at' h:mm a"
+        )
+      : null;
   const [eventName, setEventName] = useState("");
   const [roomSize, setRoomSize] = useState("");
   const [guestCount, setGuestCount] = useState("");
@@ -280,6 +287,13 @@ export default function QuoteRequestForm({
             />
           </label>
         </div>
+
+        {dropoffLabel && (
+          <div className="mt-4 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+            Return due <span className="font-semibold text-navy">{dropoffLabel}</span>. Returns
+            after this time are billed for an additional day.
+          </div>
+        )}
 
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600">

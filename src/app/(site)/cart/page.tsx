@@ -526,7 +526,7 @@ export default function CartPage() {
           </div>
 
           <div className="rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
-            Rental runs {RENTAL_HOURS} hours — return due{" "}
+            Return due{" "}
             <span className="font-semibold text-navy">
               {format(dropoffAtDate, "EEE, MMM d 'at' h:mm a")}
             </span>

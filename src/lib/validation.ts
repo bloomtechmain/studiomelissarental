@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { PICKUP_AT_PATTERN } from "@/lib/rental";
 
-export const slotSchema = z.enum(["MORNING", "AFTERNOON"]);
 export const dateStrSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
+export const pickupAtSchema = z.string().regex(PICKUP_AT_PATTERN, "Expected YYYY-MM-DDTHH:mm");
 
 export const customerInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
@@ -11,8 +12,7 @@ export const customerInputSchema = z.object({
 });
 
 const bookingCommonSchema = {
-  date: dateStrSchema,
-  slot: slotSchema,
+  pickupAt: pickupAtSchema,
   eventName: z.string().trim().max(200).optional().or(z.literal("")),
   eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
@@ -60,6 +60,18 @@ export const bookingInputSchema = z.discriminatedUnion("kind", [
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 
 export const loginSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(1),
+});
+
+export const customerSignupSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(200),
+  email: z.string().trim().email(),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const customerLoginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
 });

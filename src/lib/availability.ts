@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getGlobalBufferHours } from "@/lib/settings";
-import { slotWindow, type SlotKey } from "@/lib/slots";
+import { rentalWindow } from "@/lib/rental";
 import type { Prisma } from "@prisma/client";
 
 export class InsufficientAvailabilityError extends Error {
   constructor(itemName: string, requested: number, available: number) {
     super(
-      `Only ${available} unit(s) of "${itemName}" are available for that date/slot (requested ${requested}).`
+      `Only ${available} unit(s) of "${itemName}" are available for that pickup time (requested ${requested}).`
     );
     this.name = "InsufficientAvailabilityError";
   }
@@ -23,10 +23,9 @@ async function itemBufferHours(itemId: string): Promise<number> {
 // their buffer are accounted for.
 export async function getAvailability(
   itemId: string,
-  dateStr: string,
-  slot: SlotKey
+  pickupAt: Date
 ): Promise<{ totalEligible: number; availableUnitIds: string[] }> {
-  const { startAt, endAt } = slotWindow(dateStr, slot);
+  const { startAt, endAt } = rentalWindow(pickupAt);
 
   const eligibleUnits = await prisma.equipmentUnit.findMany({
     where: { itemId, status: { in: ["AVAILABLE", "OUT"] } },
@@ -53,17 +52,17 @@ export async function getAvailability(
   return { totalEligible: eligibleIds.length, availableUnitIds };
 }
 
-// Picks `quantity` free units for the given item/date/slot and inserts
+// Picks `quantity` free units for the given item/pickup time and inserts
 // BookingUnit rows inside the given transaction. The DB-level EXCLUDE
 // constraint (see migration) is the real guarantee against double-booking
 // under concurrency; this query is what makes a single request pick
 // sensible units and fail fast with a clear error otherwise.
 export async function assignUnits(
   tx: Prisma.TransactionClient,
-  args: { bookingId: string; itemId: string; dateStr: string; slot: SlotKey; quantity: number }
+  args: { bookingId: string; itemId: string; pickupAt: Date; quantity: number }
 ): Promise<string[]> {
-  const { bookingId, itemId, dateStr, slot, quantity } = args;
-  const { startAt, endAt } = slotWindow(dateStr, slot);
+  const { bookingId, itemId, pickupAt, quantity } = args;
+  const { startAt, endAt } = rentalWindow(pickupAt);
   const buffer = await itemBufferHours(itemId);
   const blockedUntil = new Date(endAt.getTime() + buffer * 60 * 60 * 1000);
 
@@ -110,12 +109,11 @@ export type PackageAvailabilityLine = {
   ok: boolean;
 };
 
-// Checks every component of a package against a single date/slot. All lines
+// Checks every component of a package against a single pickup time. All lines
 // must have enough free stock for the package as a whole to be bookable.
 export async function getPackageAvailability(
   packageId: string,
-  dateStr: string,
-  slot: SlotKey
+  pickupAt: Date
 ): Promise<{ bookable: boolean; lines: PackageAvailabilityLine[] }> {
   const pkg = await prisma.package.findUniqueOrThrow({
     where: { id: packageId },
@@ -124,7 +122,7 @@ export async function getPackageAvailability(
 
   const lines: PackageAvailabilityLine[] = [];
   for (const comp of pkg.components) {
-    const { availableUnitIds } = await getAvailability(comp.itemId, dateStr, slot);
+    const { availableUnitIds } = await getAvailability(comp.itemId, pickupAt);
     lines.push({
       itemId: comp.itemId,
       itemName: comp.item.name,

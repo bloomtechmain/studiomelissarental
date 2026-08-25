@@ -13,8 +13,9 @@ export default function RentalAgreementText({
   eventName,
   eventAddress,
   equipmentLines,
-  deliveryLabel,
+  fulfillmentType,
   pickupLabel,
+  dropoffLabel,
 }: {
   renterName: string;
   org?: string;
@@ -23,8 +24,9 @@ export default function RentalAgreementText({
   eventName?: string;
   eventAddress?: string;
   equipmentLines: string[];
-  deliveryLabel: string;
+  fulfillmentType: "DELIVERY" | "SELF_PICKUP";
   pickupLabel: string;
+  dropoffLabel: string;
 }) {
   const Field = ({ label, value }: { label: string; value?: string }) => (
     <div className="flex justify-between gap-4 border-b border-line py-1.5 text-sm">
@@ -68,13 +70,18 @@ export default function RentalAgreementText({
             )}
           </span>
         </div>
-        <Field label="Delivery" value={deliveryLabel} />
-        <Field label="Pickup" value={pickupLabel} />
+        <Field label={fulfillmentType === "DELIVERY" ? "Delivery time" : "Pickup time"} value={pickupLabel} />
+        <Field label="Return due" value={dropoffLabel} />
         <Field label="Rental fee / deposit" value="To be confirmed by Studio Melissa Rental staff" />
       </div>
       <p className="mt-2 text-xs text-steel">
-        The specific equipment provided under this rental is listed on the attached Equipment
-        Schedule / delivery ticket, which is incorporated into this Agreement by reference.
+        {fulfillmentType === "DELIVERY"
+          ? "The specific equipment provided under this rental is listed on the attached Equipment Schedule / delivery ticket, which is incorporated into this Agreement by reference."
+          : "The specific equipment provided under this rental is listed on the attached Equipment Schedule, which is incorporated into this Agreement by reference. This rental is customer pickup and return — no delivery is included."}
+      </p>
+      <p className="mt-2 text-xs font-medium text-amber-deep">
+        Please return the equipment by the &quot;Return due&quot; time above — returns after that
+        time are billed for an additional rental day.
       </p>
 
       <AgreementBody />

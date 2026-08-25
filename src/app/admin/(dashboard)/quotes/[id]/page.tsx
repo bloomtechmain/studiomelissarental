@@ -39,8 +39,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
         </a>
       </div>
       <p className="mt-1 text-steel">
-        {quote.eventDate ? format(quote.eventDate, "MMM d, yyyy") : "No date set"}
-        {quote.slot && ` · ${quote.slot === "MORNING" ? "8am–6pm" : "3pm–12am"}`}
+        {quote.pickupAt ? format(quote.pickupAt, "MMM d, yyyy 'at' h:mm a") : "No pickup time set"}
         {quote.eventAddress && ` · ${quote.eventAddress}`}
       </p>
 

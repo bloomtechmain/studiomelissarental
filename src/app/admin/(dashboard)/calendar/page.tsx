@@ -113,9 +113,9 @@ export default async function AdminCalendarPage({
                     className={`truncate rounded border px-1.5 py-0.5 text-[11px] font-medium ${
                       STATUS_COLOR[b.status] ?? "bg-paper text-navy border-line"
                     }`}
-                    title={`${b.customer.name} · ${b.slot}`}
+                    title={`${b.customer.name} · pickup ${format(b.startAt, "h:mm a")}`}
                   >
-                    {b.slot === "MORNING" ? "AM" : "PM"} · {b.customer.name}
+                    {format(b.startAt, "h:mma")} · {b.customer.name}
                   </Link>
                 ))}
               </div>

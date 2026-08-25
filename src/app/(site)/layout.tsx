@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Volume2, Package, MapPin, ChevronRight, MessageSquareText } from "lucide-react";
+import { Volume2, Package, MapPin, ChevronRight, MessageSquareText, Mail, User } from "lucide-react";
 import { CartProvider } from "@/components/CartProvider";
 import CartNavLink from "@/components/CartNavLink";
 
@@ -14,18 +14,18 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <nav className="flex flex-wrap items-center justify-end gap-2.5">
             <Link
-              href="/#packages"
+              href="/services"
               className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
             >
               <Package className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Packages
+              Services
             </Link>
             <Link
-              href="/#catalog"
+              href="/products"
               className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
             >
               <Volume2 className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Equipment
+              Products
             </Link>
             <Link
               href="/quote"
@@ -33,6 +33,20 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             >
               <MessageSquareText className="h-3.5 w-3.5" strokeWidth={2.25} />
               Request a quote
+            </Link>
+            <Link
+              href="/contact"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+            >
+              <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />
+              Contact
+            </Link>
+            <Link
+              href="/account"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+            >
+              <User className="h-3.5 w-3.5" strokeWidth={2.25} />
+              Account
             </Link>
             <CartNavLink />
           </nav>
@@ -64,19 +78,19 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             <ul className="mt-3 space-y-2.5 text-sm">
               <li>
                 <Link
-                  href="/#packages"
+                  href="/services"
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
-                  Package tiers
+                  Services
                   <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/#catalog"
+                  href="/products"
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
-                  Equipment catalog
+                  Products
                   <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </Link>
               </li>
@@ -86,6 +100,15 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
                   Request a quote
+                  <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
+                >
+                  Contact us
                   <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </Link>
               </li>

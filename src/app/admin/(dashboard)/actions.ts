@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
@@ -10,7 +11,7 @@ import { saveAgreementFile, saveItemPhoto, saveCompanySignature } from "@/lib/up
 import { readPngDimensions } from "@/lib/png";
 import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
 import { BookingConflictError } from "@/lib/booking";
-import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
+import { rentalWindow, parsePickupAt, toDateStr } from "@/lib/rental";
 import { getStripe } from "@/lib/stripe";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
@@ -64,6 +65,76 @@ export async function updateBookingStatus(
       return { ok: false, code: "BALANCE_REMAINING" };
     }
     overrodeSomething = Boolean(options?.overridePayment);
+  }
+
+  // Late-return detection + auto-charge: only fires the first time a booking
+  // is marked RETURNED (returnedAt is otherwise never set), comparing the
+  // actual return moment against the un-buffered rental deadline
+  // (booking.endAt — not BookingUnit.blockedUntil, which already includes
+  // the cleaning/inspection buffer and isn't the customer's deadline). Per
+  // spec this is a flat one extra day, not hourly proration. Only charges
+  // where a real price exists — three of the four package tiers still have
+  // no real price on file, so those just get flagged for staff instead.
+  if (status === "RETURNED") {
+    const booking = await prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { lines: { include: { item: true } }, package: true },
+    });
+    if (!booking.returnedAt) {
+      const returnedAt = new Date();
+      const isLate = returnedAt > booking.endAt;
+      await prisma.booking.update({ where: { id: bookingId }, data: { returnedAt } });
+
+      if (isLate) {
+        if (booking.package) {
+          if (Number(booking.package.price) > 0) {
+            await prisma.bookingCharge.create({
+              data: {
+                bookingId,
+                description: `Late return — additional day (${booking.package.name})`,
+                quantity: 1,
+                unitPrice: booking.package.price,
+              },
+            });
+            await logAudit({
+              entity: "Booking",
+              entityId: bookingId,
+              action: "late_return_charge",
+              detail: `Auto-charged one additional day ($${Number(booking.package.price).toFixed(2)}) for late return`,
+              actorId: session.id,
+            });
+          } else {
+            await logAudit({
+              entity: "Booking",
+              entityId: bookingId,
+              action: "late_return_flagged",
+              detail: `Returned late — no price on file for "${booking.package.name}" yet, add a charge manually`,
+              actorId: session.id,
+            });
+          }
+        } else {
+          for (const line of booking.lines) {
+            await prisma.bookingCharge.create({
+              data: {
+                bookingId,
+                description: `Late return — additional day (${line.item.name})`,
+                quantity: line.quantity,
+                unitPrice: line.item.dailyRate,
+              },
+            });
+          }
+          const total = booking.lines.reduce((s, l) => s + Number(l.item.dailyRate) * l.quantity, 0);
+          await logAudit({
+            entity: "Booking",
+            entityId: bookingId,
+            action: "late_return_charge",
+            detail: `Auto-charged one additional day ($${total.toFixed(2)}) for late return`,
+            actorId: session.id,
+          });
+        }
+        revalidatePath(`/admin/bookings/${bookingId}`);
+      }
+    }
   }
 
   if (status === "CANCELLED") {
@@ -293,18 +364,20 @@ export async function removeBookingCharge(chargeId: string, bookingId: string) {
   revalidatePath(`/admin/bookings/${bookingId}`);
 }
 
-// --- Booking schedule edit (date/slot) — re-checks conflicts --------------
+// --- Booking schedule edit (pickup time) — re-checks conflicts ------------
 
 export type RescheduleResult = { ok: true } | { ok: false; error: string };
 
 export async function rescheduleBooking(
   bookingId: string,
-  input: { date: string; slot: SlotKey }
+  input: { pickupAt: string }
 ): Promise<RescheduleResult> {
   const session = await requireSession();
   requirePermission(session, "bookings:write");
 
-  const { startAt, endAt } = slotWindow(input.date, input.slot);
+  const pickupAt = parsePickupAt(input.pickupAt);
+  const { startAt, endAt } = rentalWindow(pickupAt);
+  const dateStr = toDateStr(pickupAt);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -314,20 +387,19 @@ export async function rescheduleBooking(
       });
 
       // Release the current assignments, then re-assign fresh ones for the
-      // new date/slot — this is what forces a real conflict re-check rather
-      // than trusting the old assignment still holds.
+      // new pickup time — this is what forces a real conflict re-check
+      // rather than trusting the old assignment still holds.
       await tx.bookingUnit.deleteMany({ where: { bookingId } });
       await tx.booking.update({
         where: { id: bookingId },
-        data: { date: new Date(`${input.date}T00:00:00`), slot: input.slot, startAt, endAt },
+        data: { date: new Date(`${dateStr}T00:00:00`), pickupAt, startAt, endAt },
       });
 
       for (const line of booking.lines) {
         await assignUnits(tx, {
           bookingId,
           itemId: line.itemId,
-          dateStr: input.date,
-          slot: input.slot,
+          pickupAt,
           quantity: line.quantity,
         });
       }
@@ -343,7 +415,7 @@ export async function rescheduleBooking(
     entity: "Booking",
     entityId: bookingId,
     action: "rescheduled",
-    detail: `Rescheduled to ${input.date} (${input.slot})`,
+    detail: `Rescheduled to ${format(pickupAt, "MMM d, yyyy h:mm a")}`,
     actorId: session.id,
   });
 
@@ -374,11 +446,9 @@ export async function getSwapCandidates(
     include: { unit: true, booking: true },
   });
 
-  const dateStr = toDateStr(bookingUnit.booking.date);
   const { availableUnitIds } = await getAvailability(
     bookingUnit.unit.itemId,
-    dateStr,
-    bookingUnit.booking.slot
+    bookingUnit.booking.pickupAt
   );
   if (availableUnitIds.length === 0) return [];
 
@@ -467,7 +537,7 @@ export async function updateInsuranceStatus(bookingId: string, onFile: boolean) 
 }
 
 // Delivery/pickup checklist (3.4) — address and the delivery/pickup windows
-// themselves come from existing booking fields (eventAddress, date/slot);
+// themselves come from existing booking fields (eventAddress, pickupAt);
 // this covers the two pieces that don't already exist anywhere else.
 export async function updateBookingChecklist(
   bookingId: string,

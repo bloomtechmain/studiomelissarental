@@ -3,8 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createQuote } from "../actions";
-import type { SlotKey } from "@/lib/slots";
-import { SLOTS } from "@/lib/slots";
 
 type Option = { id: string; label: string };
 
@@ -27,7 +25,7 @@ export default function NewQuoteForm({
   const [eventName, setEventName] = useState("");
   const [eventAddress, setEventAddress] = useState("");
   const [eventDate, setEventDate] = useState("");
-  const [slot, setSlot] = useState<SlotKey>("MORNING");
+  const [pickupTime, setPickupTime] = useState("08:00");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +37,7 @@ export default function NewQuoteForm({
         eventName,
         eventAddress,
         eventDate,
-        slot,
+        pickupAt: eventDate ? `${eventDate}T${pickupTime}` : undefined,
       });
       router.push(`/admin/quotes/${id}`);
     });
@@ -94,14 +92,13 @@ export default function NewQuoteForm({
           <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="rounded border border-line px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
-          Time slot
-          <select value={slot} onChange={(e) => setSlot(e.target.value as SlotKey)} className="rounded border border-line px-3 py-2">
-            {(Object.keys(SLOTS) as SlotKey[]).map((k) => (
-              <option key={k} value={k}>
-                {SLOTS[k].label}
-              </option>
-            ))}
-          </select>
+          Pickup time
+          <input
+            type="time"
+            value={pickupTime}
+            onChange={(e) => setPickupTime(e.target.value)}
+            className="rounded border border-line px-3 py-2"
+          />
         </label>
       </div>
       <button

@@ -12,10 +12,19 @@ import {
   Sun,
   Upload,
 } from "lucide-react";
-import { SLOTS, toDateStr, type SlotKey } from "@/lib/slots";
+import { toDateStr } from "@/lib/rental";
 import LeadAgreementText from "@/components/LeadAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
 import { format } from "date-fns";
+
+// Lead.eventTimeSlot is a legacy free-text pre-qualification field, kept
+// as-is per the rolling-pickup migration plan — a rough "when" for a lead,
+// separate from a Booking's actual pickupAt once it converts.
+type SlotKey = "MORNING" | "AFTERNOON";
+const SLOTS: Record<SlotKey, { label: string }> = {
+  MORNING: { label: "8:00 AM – 6:00 PM" },
+  AFTERNOON: { label: "3:00 PM – 12:00 AM" },
+};
 
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";

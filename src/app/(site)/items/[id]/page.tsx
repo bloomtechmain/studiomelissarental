@@ -21,10 +21,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="mx-auto max-w-5xl px-6 py-14">
       <Link
-        href="/#catalog"
+        href="/products"
         className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
       >
-        <ChevronLeft className="h-4 w-4" /> Equipment catalog
+        <ChevronLeft className="h-4 w-4" /> Products
       </Link>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr]">

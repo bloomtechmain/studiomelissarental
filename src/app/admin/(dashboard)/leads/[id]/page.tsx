@@ -2,9 +2,16 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
-import { SLOTS, type SlotKey } from "@/lib/slots";
 import { decryptSignatureCode } from "@/lib/signatureEncryption";
 import { getCompanySignatureUrl } from "@/lib/settings";
+
+// Lead.eventTimeSlot is a legacy free-text pre-qualification field (kept
+// as-is — see the rolling-pickup migration plan) with just these two
+// historical values; not the same concept as a Booking's pickupAt anymore.
+const LEAD_TIME_SLOT_LABEL: Record<string, string> = {
+  MORNING: "8:00 AM – 6:00 PM",
+  AFTERNOON: "3:00 PM – 12:00 AM",
+};
 import SignatureBlock from "@/components/SignatureBlock";
 import LeadPanel from "./LeadPanel";
 import CountersignButton from "./CountersignButton";
@@ -68,7 +75,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
             <div className="flex justify-between">
               <dt className="text-steel">Time slot</dt>
               <dd className="text-navy">
-                {lead.eventTimeSlot ? SLOTS[lead.eventTimeSlot as SlotKey]?.label ?? lead.eventTimeSlot : "—"}
+                {lead.eventTimeSlot ? LEAD_TIME_SLOT_LABEL[lead.eventTimeSlot] ?? lead.eventTimeSlot : "—"}
               </dd>
             </div>
             <div className="flex justify-between">

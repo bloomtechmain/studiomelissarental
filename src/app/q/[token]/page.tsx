@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import QuoteDocument from "@/components/QuoteDocument";
-import { SLOTS, type SlotKey } from "@/lib/slots";
+import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ export default async function SharedQuotePage({ params }: { params: Promise<{ to
         eventName={quote.eventName}
         eventDate={quote.eventDate}
         eventAddress={quote.eventAddress}
-        slotLabel={quote.slot ? SLOTS[quote.slot as SlotKey].label : null}
+        pickupLabel={quote.pickupAt ? format(quote.pickupAt, "h:mm a") : null}
         lines={quote.lines.map((l) => ({
           id: l.id,
           description: l.description,

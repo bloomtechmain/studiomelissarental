@@ -3,29 +3,28 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { rescheduleBooking } from "../../actions";
-import { SLOTS, type SlotKey } from "@/lib/slots";
 
 export default function RescheduleForm({
   bookingId,
   currentDate,
-  currentSlot,
+  currentTime,
 }: {
   bookingId: string;
   currentDate: string;
-  currentSlot: SlotKey;
+  currentTime: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(currentDate);
-  const [slot, setSlot] = useState<SlotKey>(currentSlot);
+  const [time, setTime] = useState(currentTime);
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await rescheduleBooking(bookingId, { date, slot });
+      const result = await rescheduleBooking(bookingId, { pickupAt: `${date}T${time}` });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -49,18 +48,12 @@ export default function RescheduleForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-lg border border-line bg-paper p-3">
       <label className="flex flex-col gap-1 text-xs font-medium text-navy">
-        New date
+        New pickup date
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-line px-2 py-1.5 text-sm" />
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-navy">
-        New slot
-        <select value={slot} onChange={(e) => setSlot(e.target.value as SlotKey)} className="rounded border border-line px-2 py-1.5 text-sm">
-          {(Object.keys(SLOTS) as SlotKey[]).map((k) => (
-            <option key={k} value={k}>
-              {SLOTS[k].label}
-            </option>
-          ))}
-        </select>
+        New pickup time
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded border border-line px-2 py-1.5 text-sm" />
       </label>
       <button
         type="submit"

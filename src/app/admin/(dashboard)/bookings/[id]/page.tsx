@@ -13,7 +13,7 @@ import SwapUnitControl from "./SwapUnitControl";
 import ChecklistPanel from "./ChecklistPanel";
 import { getBookingFeePercent } from "@/lib/settings";
 import { computeCancellationRefund } from "@/lib/cancellation";
-import { SLOTS, type SlotKey } from "@/lib/slots";
+import { toDateStr } from "@/lib/rental";
 import { decryptSignatureCode } from "@/lib/signatureEncryption";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +67,7 @@ export default async function AdminBookingDetailPage({
     bookingFeePercent,
   });
   const canReschedule = !["COMPLETED", "CANCELLED"].includes(booking.status);
+  const isLateReturn = booking.returnedAt !== null && booking.returnedAt > booking.endAt;
 
   return (
     <div className="max-w-3xl">
@@ -80,8 +81,9 @@ export default async function AdminBookingDetailPage({
             {booking.eventName || "Untitled event"}
           </h1>
           <p className="mt-1 text-steel">
-            {format(booking.startAt, "EEEE, MMM d, yyyy")} ·{" "}
-            {booking.slot === "MORNING" ? "8:00 AM – 6:00 PM" : "3:00 PM – 12:00 AM"}
+            Pickup {format(booking.pickupAt, "EEEE, MMM d 'at' h:mm a")} · Return due{" "}
+            {format(booking.endAt, "MMM d 'at' h:mm a")} ·{" "}
+            {booking.fulfillmentType === "DELIVERY" ? "We deliver" : "Customer pickup"}
           </p>
         </div>
         <span className="rounded-full bg-paper px-3 py-1 text-sm font-semibold text-navy">
@@ -89,13 +91,20 @@ export default async function AdminBookingDetailPage({
         </span>
       </div>
 
+      {isLateReturn && (
+        <div className="mt-4 rounded-lg border border-amber/40 bg-amber/10 px-4 py-3 text-sm font-medium text-amber-deep">
+          Returned late ({format(booking.returnedAt!, "MMM d 'at' h:mm a")}, due{" "}
+          {format(booking.endAt, "MMM d 'at' h:mm a")}).
+        </div>
+      )}
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <BookingStatusActions bookingId={booking.id} status={booking.status} />
         {canReschedule && (
           <RescheduleForm
             bookingId={booking.id}
-            currentDate={format(booking.date, "yyyy-MM-dd")}
-            currentSlot={booking.slot}
+            currentDate={toDateStr(booking.pickupAt)}
+            currentTime={format(booking.pickupAt, "HH:mm")}
           />
         )}
       </div>
@@ -163,8 +172,9 @@ export default async function AdminBookingDetailPage({
         <ChecklistPanel
           bookingId={booking.id}
           eventAddress={booking.eventAddress}
-          deliveryWindowLabel={`${format(booking.date, "MMM d, yyyy")} — ${SLOTS[booking.slot as SlotKey].label.split(" – ")[0]}`}
-          pickupWindowLabel={`${format(booking.date, "MMM d, yyyy")} — ${SLOTS[booking.slot as SlotKey].label.split(" – ")[1]}`}
+          fulfillmentType={booking.fulfillmentType}
+          pickupWindowLabel={format(booking.pickupAt, "MMM d, yyyy 'at' h:mm a")}
+          dropoffWindowLabel={format(booking.endAt, "MMM d, yyyy 'at' h:mm a")}
           siteContactName={booking.siteContactName}
           siteContactPhone={booking.siteContactPhone}
           loadInNotes={booking.loadInNotes}

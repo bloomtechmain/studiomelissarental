@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
-import { slotWindow } from "@/lib/slots";
+import { rentalWindow, parsePickupAt, toDateStr } from "@/lib/rental";
 import { generateSignatureCode } from "@/lib/signatureEncryption";
 import { saveSignatureImage } from "@/lib/uploads";
 import type { BookingInput } from "@/lib/validation";
@@ -16,7 +16,7 @@ const POSTGRES_UNIQUE_VIOLATION = "23505";
 export class BookingConflictError extends Error {
   constructor() {
     super(
-      "That item just became unavailable for the selected date/slot (someone else booked it first). Please pick another slot or reduce the quantity."
+      "That item just became unavailable for the selected pickup time (someone else booked it first). Please pick another time or reduce the quantity."
     );
     this.name = "BookingConflictError";
   }
@@ -58,7 +58,9 @@ export async function createBooking(
   signerIp: string,
   signatureImageBuffer: Buffer
 ) {
-  const { startAt, endAt } = slotWindow(input.date, input.slot);
+  const pickupAt = parsePickupAt(input.pickupAt);
+  const { startAt, endAt } = rentalWindow(pickupAt);
+  const dateStr = toDateStr(pickupAt);
 
   // Same signature evidence regardless of which branch below actually
   // creates the booking — computed once so both stay identical.
@@ -91,10 +93,11 @@ export async function createBooking(
             eventName: input.eventName || undefined,
             eventAddress: input.eventAddress || undefined,
             notes: input.notes || undefined,
-            date: new Date(`${input.date}T00:00:00`),
-            slot: input.slot,
+            date: new Date(`${dateStr}T00:00:00`),
+            pickupAt,
             startAt,
             endAt,
+            fulfillmentType: "SELF_PICKUP",
             ...signatureFields,
             lines: {
               create: [{ itemId: item.id, quantity: input.quantity }],
@@ -104,8 +107,7 @@ export async function createBooking(
         await assignUnits(tx, {
           bookingId: booking.id,
           itemId: item.id,
-          dateStr: input.date,
-          slot: input.slot,
+          pickupAt,
           quantity: input.quantity,
         });
         return booking;
@@ -129,10 +131,11 @@ export async function createBooking(
             eventName: input.eventName || undefined,
             eventAddress: input.eventAddress || undefined,
             notes: input.notes || undefined,
-            date: new Date(`${input.date}T00:00:00`),
-            slot: input.slot,
+            date: new Date(`${dateStr}T00:00:00`),
+            pickupAt,
             startAt,
             endAt,
+            fulfillmentType: "SELF_PICKUP",
             ...signatureFields,
             lines: {
               create: [...merged.entries()].map(([itemId, quantity]) => ({ itemId, quantity })),
@@ -141,7 +144,7 @@ export async function createBooking(
         });
 
         for (const [itemId, quantity] of merged) {
-          await assignUnits(tx, { bookingId: booking.id, itemId, dateStr: input.date, slot: input.slot, quantity });
+          await assignUnits(tx, { bookingId: booking.id, itemId, pickupAt, quantity });
         }
 
         return booking;
@@ -166,10 +169,11 @@ export async function createBooking(
           eventName: input.eventName || undefined,
           eventAddress: input.eventAddress || undefined,
           notes: input.notes || undefined,
-          date: new Date(`${input.date}T00:00:00`),
-          slot: input.slot,
+          date: new Date(`${dateStr}T00:00:00`),
+          pickupAt,
           startAt,
           endAt,
+          fulfillmentType: "DELIVERY",
           ...signatureFields,
           lines: {
             create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })),
@@ -181,8 +185,7 @@ export async function createBooking(
         await assignUnits(tx, {
           bookingId: booking.id,
           itemId: comp.itemId,
-          dateStr: input.date,
-          slot: input.slot,
+          pickupAt,
           quantity: comp.quantity,
         });
       }

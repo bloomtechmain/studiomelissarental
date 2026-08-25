@@ -6,7 +6,7 @@ import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { assignUnits, InsufficientAvailabilityError } from "@/lib/availability";
-import { slotWindow, toDateStr, type SlotKey } from "@/lib/slots";
+import { rentalWindow, parsePickupAt, toDateStr } from "@/lib/rental";
 import { generateShareToken } from "@/lib/tokens";
 import type { QuoteStatus } from "@prisma/client";
 
@@ -17,7 +17,7 @@ export async function createQuote(input: {
   eventName?: string;
   eventAddress?: string;
   eventDate?: string;
-  slot?: SlotKey;
+  pickupAt?: string;
 }) {
   const session = await requireSession();
   requirePermission(session, "quotes:write");
@@ -40,7 +40,7 @@ export async function createQuote(input: {
       eventName: input.eventName || undefined,
       eventAddress: input.eventAddress || undefined,
       eventDate: input.eventDate ? new Date(`${input.eventDate}T00:00:00`) : undefined,
-      slot: input.slot || undefined,
+      pickupAt: input.pickupAt ? parsePickupAt(input.pickupAt) : undefined,
       basePrice,
       createdById: session.id,
       lines: { create: lines },
@@ -83,7 +83,7 @@ export async function updateQuoteDetails(
     eventName?: string;
     eventAddress?: string;
     eventDate?: string;
-    slot?: SlotKey;
+    pickupAt?: string;
     expiresAt?: string;
     status: QuoteStatus;
     customerId?: string;
@@ -97,7 +97,7 @@ export async function updateQuoteDetails(
       eventName: input.eventName || undefined,
       eventAddress: input.eventAddress || undefined,
       eventDate: input.eventDate ? new Date(`${input.eventDate}T00:00:00`) : undefined,
-      slot: input.slot || undefined,
+      pickupAt: input.pickupAt ? parsePickupAt(input.pickupAt) : undefined,
       expiresAt: input.expiresAt ? new Date(`${input.expiresAt}T00:00:00`) : undefined,
       status: input.status,
       customerId: input.customerId || undefined,
@@ -139,15 +139,16 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
   if (!quote.customerId) {
     return { ok: false, error: "Attach a customer to this quote before converting it to a booking." };
   }
-  if (!quote.eventDate || !quote.slot) {
-    return { ok: false, error: "Set an event date and time slot on this quote first." };
+  if (!quote.pickupAt) {
+    return { ok: false, error: "Set a pickup date and time on this quote first." };
   }
   if (!quote.packageId && quote.lines.length === 0) {
     return { ok: false, error: "Add at least one line item before converting this quote." };
   }
 
-  const dateStr = toDateStr(quote.eventDate);
-  const { startAt, endAt } = slotWindow(dateStr, quote.slot);
+  const pickupAt = quote.pickupAt;
+  const dateStr = toDateStr(pickupAt);
+  const { startAt, endAt } = rentalWindow(pickupAt);
   const total = quote.lines.reduce((sum, l) => sum + Number(l.unitPrice) * l.quantity, 0);
 
   try {
@@ -183,10 +184,11 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
           packageId: pkg?.id,
           eventName: quote.eventName || undefined,
           eventAddress: quote.eventAddress || undefined,
-          date: quote.eventDate!,
-          slot: quote.slot!,
+          date: new Date(`${dateStr}T00:00:00`),
+          pickupAt,
           startAt,
           endAt,
+          fulfillmentType: pkg ? "DELIVERY" : "SELF_PICKUP",
           rentalFee: total,
           createdById: session.id,
           lines: pkg ? { create: pkg.components.map((c) => ({ itemId: c.itemId, quantity: c.quantity })) } : undefined,
@@ -199,8 +201,7 @@ export async function convertQuoteToBooking(quoteId: string): Promise<ConvertQuo
           await assignUnits(tx, {
             bookingId: booking.id,
             itemId: comp.itemId,
-            dateStr,
-            slot: quote.slot!,
+            pickupAt,
             quantity: comp.quantity,
           });
         }

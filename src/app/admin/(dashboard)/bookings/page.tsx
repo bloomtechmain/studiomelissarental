@@ -60,8 +60,8 @@ export default async function AdminBookingsPage({
         <table className="w-full text-sm">
           <thead className="bg-paper text-left text-xs uppercase tracking-wide text-steel">
             <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Slot</th>
+              <th className="px-4 py-3">Pickup</th>
+              <th className="px-4 py-3">Return due</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Package / Items</th>
               <th className="px-4 py-3">Status</th>
@@ -75,12 +75,12 @@ export default async function AdminBookingsPage({
                     href={`/admin/bookings/${b.id}`}
                     className="block px-4 py-3 text-navy group-hover:text-signal"
                   >
-                    {format(b.startAt, "MMM d, yyyy")}
+                    {format(b.startAt, "MMM d, h:mm a")}
                   </Link>
                 </td>
                 <td className="p-0">
                   <Link href={`/admin/bookings/${b.id}`} className="block px-4 py-3 text-steel">
-                    {b.slot === "MORNING" ? "8am–6pm" : "3pm–12am"}
+                    {format(b.endAt, "MMM d, h:mm a")}
                   </Link>
                 </td>
                 <td className="p-0">

@@ -6,22 +6,28 @@ import { format } from "date-fns";
 import { useCart } from "@/components/CartProvider";
 import RentalAgreementText from "@/components/RentalAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
-import { SLOTS, type SlotKey } from "@/lib/slots";
+import { RENTAL_HOURS } from "@/lib/rental";
 import {
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
+  Clock,
   CreditCard,
   Loader2,
   Minus,
   PartyPopper,
   Plus,
   ShoppingCart,
-  Sun,
-  Moon,
   Trash2,
+  Truck,
   Upload,
 } from "lucide-react";
+
+// Business hours for the pickup time picker — bounded so a 21h rental
+// doesn't produce an absurd overnight drop-off time.
+const MIN_PICKUP_TIME = "07:00";
+const MAX_PICKUP_TIME = "20:00";
+const DEFAULT_PICKUP_TIME = "08:00";
 
 type SignatureResult = { name: string; hash: string; ip: string; signedAt: string };
 
@@ -60,8 +66,11 @@ export default function CartPage() {
   const cart = useCart();
   const [step, setStep] = useState<"cart" | "review" | "done">("cart");
 
-  const [date, setDate] = useState(todayStr());
-  const [slot, setSlot] = useState<SlotKey>("MORNING");
+  const [pickupDate, setPickupDate] = useState(todayStr());
+  const [pickupTime, setPickupTime] = useState(DEFAULT_PICKUP_TIME);
+  const pickupAtStr = `${pickupDate}T${pickupTime}`;
+  const pickupAtDate = new Date(pickupAtStr);
+  const dropoffAtDate = new Date(pickupAtDate.getTime() + RENTAL_HOURS * 3600_000);
   const [checking, setChecking] = useState(false);
   const [availability, setAvailability] = useState<Record<string, number>>({});
   const [limitNoticeItemId, setLimitNoticeItemId] = useState<string | null>(null);
@@ -109,7 +118,7 @@ export default function CartPage() {
       setChecking(true);
       Promise.all(
         cart.lines.map((l) =>
-          fetch(`/api/availability?itemId=${l.itemId}&date=${date}&slot=${slot}`)
+          fetch(`/api/availability?itemId=${l.itemId}&pickupAt=${pickupAtStr}`)
             .then((r) => r.json())
             .then((data) => [l.itemId, data.available ?? 0] as const)
         )
@@ -127,7 +136,7 @@ export default function CartPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [cart.lines, date, slot]);
+  }, [cart.lines, pickupAtStr]);
 
   const allAvailable =
     cart.lines.length > 0 && cart.lines.every((l) => (availability[l.itemId] ?? 0) >= l.quantity);
@@ -136,7 +145,7 @@ export default function CartPage() {
     e.preventDefault();
     setError(null);
     if (!allAvailable) {
-      setError("Adjust quantities or pick a different date/slot — not everything in your cart is available.");
+      setError("Adjust quantities or pick a different pickup time — not everything in your cart is available.");
       return;
     }
     if (!signatureName.trim()) setSignatureName(name.trim());
@@ -191,8 +200,7 @@ export default function CartPage() {
     const bookingData = {
       kind: "cart" as const,
       lines: cart.lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
-      date,
-      slot,
+      pickupAt: pickupAtStr,
       eventName,
       eventAddress,
       notes,
@@ -306,7 +314,7 @@ export default function CartPage() {
         <h1 className="mt-5 font-display text-2xl font-semibold text-navy">Your cart is empty</h1>
         <p className="mt-2 text-steel">Browse the equipment catalog and add what you need.</p>
         <Link
-          href="/#catalog"
+          href="/products"
           className="mt-6 inline-flex items-center rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white hover:brightness-110"
         >
           Browse equipment
@@ -345,12 +353,9 @@ export default function CartPage() {
               eventName={eventName}
               eventAddress={eventAddress}
               equipmentLines={cart.lines.map((l) => `${l.quantity}× ${l.name}`)}
-              deliveryLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
-                SLOTS[slot].label.split(" – ")[0].trim()
-              }`}
-              pickupLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
-                SLOTS[slot].label.split(" – ")[1].trim()
-              }`}
+              fulfillmentType="SELF_PICKUP"
+              pickupLabel={format(pickupAtDate, "MMM d, yyyy 'at' h:mm a")}
+              dropoffLabel={format(dropoffAtDate, "MMM d, yyyy 'at' h:mm a")}
             />
           </div>
 
@@ -411,7 +416,7 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-14">
       <Link
-        href="/#catalog"
+        href="/products"
         className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
       >
         <ChevronLeft className="h-4 w-4" /> Keep browsing
@@ -490,43 +495,47 @@ export default function CartPage() {
         </div>
 
         <div className="flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm">
-          <label className={labelClass}>
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
-            </span>
-            <input
-              type="date"
-              required
-              min={todayStr()}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5 text-steel" /> Pickup date
+              </span>
+              <input
+                type="date"
+                required
+                min={todayStr()}
+                value={pickupDate}
+                onChange={(e) => setPickupDate(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className={labelClass}>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-steel" /> Pickup time
+              </span>
+              <input
+                type="time"
+                required
+                min={MIN_PICKUP_TIME}
+                max={MAX_PICKUP_TIME}
+                value={pickupTime}
+                onChange={(e) => setPickupTime(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </div>
 
-          <div>
-            <p className="text-sm font-semibold text-navy">Time slot</p>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              {(Object.keys(SLOTS) as SlotKey[]).map((key) => {
-                const active = slot === key;
-                const Icon = key === "MORNING" ? Sun : Moon;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSlot(key)}
-                    className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition ${
-                      active
-                        ? "border-signal bg-signal-light/40 text-navy shadow-sm"
-                        : "border-line text-steel hover:border-signal/50"
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 ${active ? "text-signal" : "text-steel/60"}`} />
-                    <span className="text-xs font-semibold">{SLOTS[key].label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+            Rental runs {RENTAL_HOURS} hours — return due{" "}
+            <span className="font-semibold text-navy">
+              {format(dropoffAtDate, "EEE, MMM d 'at' h:mm a")}
+            </span>
+            . Returns after this time are billed for an additional day.
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+            <Truck className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
+            You&apos;ll need to pick this up from our location — no delivery is included.
           </div>
 
           <div
@@ -546,8 +555,8 @@ export default function CartPage() {
               <span className="flex items-center gap-2">
                 {allAvailable && <CheckCircle2 className="h-4 w-4 shrink-0" />}
                 {allAvailable
-                  ? "Everything in your cart is available for that date/slot."
-                  : "Not everything is available — adjust quantities or pick another date/slot."}
+                  ? "Everything in your cart is available for that pickup time."
+                  : "Not everything is available — adjust quantities or pick another pickup time."}
               </span>
             )}
           </div>

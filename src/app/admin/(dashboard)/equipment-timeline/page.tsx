@@ -2,15 +2,36 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
 import { addDays, format } from "date-fns";
-import { slotWindow } from "@/lib/slots";
 
 export const dynamic = "force-dynamic";
 
 const DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// A rental can span across midnight (e.g. an 8pm pickup + 21h rental runs
+// into the next calendar day), so one assignment can paint into more than
+// one day-cell — each cell only shows the slice of the blocked window that
+// actually falls within that calendar day.
+function daySegments(assignments: { blockedFrom: Date; blockedUntil: Date }[], day: Date) {
+  const dayStart = day.getTime();
+  const dayEnd = dayStart + DAY_MS;
+  const segments: { leftPct: number; widthPct: number }[] = [];
+  for (const a of assignments) {
+    const segStart = Math.max(a.blockedFrom.getTime(), dayStart);
+    const segEnd = Math.min(a.blockedUntil.getTime(), dayEnd);
+    if (segStart < segEnd) {
+      segments.push({
+        leftPct: ((segStart - dayStart) / DAY_MS) * 100,
+        widthPct: ((segEnd - segStart) / DAY_MS) * 100,
+      });
+    }
+  }
+  return segments;
 }
 
 export default async function EquipmentTimelinePage({
@@ -41,12 +62,6 @@ export default async function EquipmentTimelinePage({
     },
   });
 
-  function slotBlocked(assignments: { blockedFrom: Date; blockedUntil: Date }[], day: Date, slot: "MORNING" | "AFTERNOON") {
-    const dayStr = format(day, "yyyy-MM-dd");
-    const { startAt, endAt } = slotWindow(dayStr, slot);
-    return assignments.some((a) => a.blockedFrom < endAt && a.blockedUntil > startAt);
-  }
-
   const prevStart = format(addDays(startDate, -DAYS), "yyyy-MM-dd");
   const nextStart = format(addDays(startDate, DAYS), "yyyy-MM-dd");
 
@@ -54,8 +69,9 @@ export default async function EquipmentTimelinePage({
     <div>
       <h1 className="font-display text-2xl font-semibold text-navy">Equipment timeline</h1>
       <p className="mt-1 text-sm text-steel">
-        Every unit&apos;s booked/available status by date — each cell splits into AM (top) / PM
-        (bottom) for the two rental windows.
+        Every unit&apos;s booked/available status by date — each cell is a continuous 24-hour bar
+        showing exactly when a unit is blocked, since pickup times are now customer-chosen rather
+        than fixed slots.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -129,13 +145,17 @@ export default async function EquipmentTimelinePage({
                           </td>
                         );
                       }
-                      const am = slotBlocked(unit.assignments, day, "MORNING");
-                      const pm = slotBlocked(unit.assignments, day, "AFTERNOON");
+                      const segments = daySegments(unit.assignments, day);
                       return (
                         <td key={day.toISOString()} className="border-l border-line p-0.5">
-                          <div className="flex h-5 w-full flex-col gap-0.5">
-                            <div className={`h-2 flex-1 rounded-sm ${am ? "bg-navy" : "bg-signal-light/50"}`} />
-                            <div className={`h-2 flex-1 rounded-sm ${pm ? "bg-navy" : "bg-signal-light/50"}`} />
+                          <div className="relative h-5 w-full overflow-hidden rounded-sm bg-signal-light/50">
+                            {segments.map((seg, i) => (
+                              <div
+                                key={i}
+                                className="absolute inset-y-0 bg-navy"
+                                style={{ left: `${seg.leftPct}%`, width: `${seg.widthPct}%` }}
+                              />
+                            ))}
                           </div>
                         </td>
                       );

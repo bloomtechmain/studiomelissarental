@@ -12,7 +12,7 @@ export default function QuoteDocument({
   eventName,
   eventDate,
   eventAddress,
-  slotLabel,
+  pickupLabel,
   lines,
 }: {
   createdAt: Date;
@@ -21,7 +21,7 @@ export default function QuoteDocument({
   eventName: string | null;
   eventDate: Date | null;
   eventAddress: string | null;
-  slotLabel: string | null;
+  pickupLabel: string | null;
   lines: Line[];
 }) {
   const total = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
@@ -58,7 +58,7 @@ export default function QuoteDocument({
           <p className="mt-1 text-navy">{eventName || "—"}</p>
           <p className="text-steel">
             {eventDate ? format(eventDate, "MMM d, yyyy") : "Date TBD"}
-            {slotLabel && ` · ${slotLabel}`}
+            {pickupLabel && ` · Pickup ${pickupLabel}`}
           </p>
           {eventAddress && <p className="text-steel">{eventAddress}</p>}
         </div>

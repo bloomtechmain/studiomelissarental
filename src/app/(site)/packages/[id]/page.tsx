@@ -19,10 +19,10 @@ export default async function PackagePage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto max-w-5xl px-6 py-14">
       <Link
-        href="/#packages"
+        href="/services"
         className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
       >
-        <ChevronLeft className="h-4 w-4" /> Package tiers
+        <ChevronLeft className="h-4 w-4" /> Services
       </Link>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr]">

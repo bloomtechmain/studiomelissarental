@@ -30,9 +30,9 @@ enum BookingStatus {
   CANCELLED
 }
 
-enum Slot {
-  MORNING // 08:00 - 18:00
-  AFTERNOON // 15:00 - 24:00
+enum FulfillmentType {
+  DELIVERY // packages/services — company delivers, sets up, and picks up
+  SELF_PICKUP // individual products — customer picks up and returns
 }
 
 enum LeadSource {
@@ -165,7 +165,8 @@ model PackageItem {
 model Customer {
   id        String    @id @default(cuid())
   name      String
-  email     String?
+  email     String?   @unique
+  passwordHash String? // set only for customers who created a self-service login; staff-entered records stay null
   phone     String?
   org       String?
   address   String?
@@ -192,10 +193,12 @@ model Booking {
   siteContactName  String?
   siteContactPhone String?
   loadInNotes      String?
-  date         DateTime      @db.Date
-  slot         Slot
-  startAt      DateTime // computed from date+slot, used for overlap queries
-  endAt        DateTime // computed from date+slot
+  date         DateTime      @db.Date // calendar day of pickupAt, derived at creation
+  pickupAt     DateTime // customer-chosen hand-off time — replaces the old fixed MORNING/AFTERNOON slot
+  startAt      DateTime // == pickupAt, kept for the overlap-query index/shape
+  endAt        DateTime // pickupAt + RENTAL_HOURS (21h) — the un-buffered return deadline
+  returnedAt   DateTime? // set when staff mark the booking RETURNED — used to detect a late return
+  fulfillmentType FulfillmentType @default(SELF_PICKUP) // DELIVERY for packages, SELF_PICKUP for individual items/cart
   status       BookingStatus @default(PENDING)
   notes        String?
   createdById  String?
@@ -429,7 +432,7 @@ model Quote {
   eventName    String?
   eventAddress String?
   eventDate    DateTime?
-  slot         Slot?
+  pickupAt     DateTime?
   basePrice    Decimal     @default(0) @db.Decimal(10, 2)
   lines        QuoteLine[]
   status       QuoteStatus @default(DRAFT)

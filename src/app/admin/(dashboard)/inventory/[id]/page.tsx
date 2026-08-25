@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { toDateStr } from "@/lib/slots";
+import { toDateStr } from "@/lib/rental";
 import EditItemForm from "./EditItemForm";
 import UnitsPanel from "./UnitsPanel";
 

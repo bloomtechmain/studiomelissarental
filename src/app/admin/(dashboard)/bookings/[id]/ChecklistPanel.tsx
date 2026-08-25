@@ -8,16 +8,18 @@ import { MapPin, Clock, User, Phone, ClipboardList } from "lucide-react";
 export default function ChecklistPanel({
   bookingId,
   eventAddress,
-  deliveryWindowLabel,
+  fulfillmentType,
   pickupWindowLabel,
+  dropoffWindowLabel,
   siteContactName,
   siteContactPhone,
   loadInNotes,
 }: {
   bookingId: string;
   eventAddress: string | null;
-  deliveryWindowLabel: string;
+  fulfillmentType: "DELIVERY" | "SELF_PICKUP";
   pickupWindowLabel: string;
+  dropoffWindowLabel: string;
   siteContactName: string | null;
   siteContactPhone: string | null;
   loadInNotes: string | null;
@@ -47,29 +49,33 @@ export default function ChecklistPanel({
     <section className="rounded-2xl border border-line bg-white shadow-sm p-5">
       <h2 className="flex items-center gap-1.5 font-semibold text-navy">
         <ClipboardList className="h-4 w-4 text-signal" strokeWidth={2.25} />
-        Delivery / pickup checklist
+        {fulfillmentType === "DELIVERY" ? "Delivery / pickup checklist" : "Customer pickup checklist"}
       </h2>
 
       <dl className="mt-3 space-y-2 text-sm">
-        <div className="flex items-start gap-2">
-          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel" />
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-steel">Address</dt>
-            <dd className="text-navy">{eventAddress || "No address on file"}</dd>
+        {fulfillmentType === "DELIVERY" && (
+          <div className="flex items-start gap-2">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel" />
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-steel">Address</dt>
+              <dd className="text-navy">{eventAddress || "No address on file"}</dd>
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-start gap-2">
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel" />
           <div>
-            <dt className="text-xs uppercase tracking-wide text-steel">Delivery window</dt>
-            <dd className="text-navy">{deliveryWindowLabel}</dd>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel" />
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-steel">Pickup window</dt>
+            <dt className="text-xs uppercase tracking-wide text-steel">
+              {fulfillmentType === "DELIVERY" ? "Delivery window" : "Pickup window"}
+            </dt>
             <dd className="text-navy">{pickupWindowLabel}</dd>
+          </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel" />
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-steel">Return due</dt>
+            <dd className="text-navy">{dropoffWindowLabel}</dd>
           </div>
         </div>
       </dl>

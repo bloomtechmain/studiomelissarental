@@ -2,24 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { SLOTS, type SlotKey } from "@/lib/slots";
+import { RENTAL_HOURS } from "@/lib/rental";
 import RentalAgreementText from "@/components/RentalAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
 import {
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
+  Clock,
   CreditCard,
   Loader2,
   PartyPopper,
-  Sun,
-  Moon,
+  Truck,
   Upload,
 } from "lucide-react";
 
 const SIGNATURE_WIDTH = 772;
 const SIGNATURE_HEIGHT = 229;
 const SIGNATURE_MAX_BYTES = 500 * 1024;
+
+// Business hours for the pickup time picker — bounded so a 21h rental
+// doesn't produce an absurd overnight drop-off time.
+const MIN_PICKUP_TIME = "07:00";
+const MAX_PICKUP_TIME = "20:00";
+const DEFAULT_PICKUP_TIME = "08:00";
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -65,9 +71,18 @@ const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 export default function BookingWidget({ target }: { target: Target }) {
   const [step, setStep] = useState<"form" | "review" | "done">("form");
 
-  const [date, setDate] = useState(todayStr());
-  const [slot, setSlot] = useState<SlotKey>("MORNING");
+  const fulfillmentType: "DELIVERY" | "SELF_PICKUP" = target.kind === "package" ? "DELIVERY" : "SELF_PICKUP";
+
+  const [pickupDate, setPickupDate] = useState(todayStr());
+  const [pickupTime, setPickupTime] = useState(DEFAULT_PICKUP_TIME);
   const [quantity, setQuantity] = useState(1);
+
+  const pickupAtStr = `${pickupDate}T${pickupTime}`;
+  const pickupAtDate = useMemo(() => new Date(pickupAtStr), [pickupAtStr]);
+  const dropoffAtDate = useMemo(
+    () => new Date(pickupAtDate.getTime() + RENTAL_HOURS * 3600_000),
+    [pickupAtDate]
+  );
 
   const [checking, setChecking] = useState(false);
   const [itemAvailable, setItemAvailable] = useState<number | null>(null);
@@ -100,8 +115,8 @@ export default function BookingWidget({ target }: { target: Target }) {
 
     const url =
       target.kind === "item"
-        ? `/api/availability?itemId=${target.itemId}&date=${date}&slot=${slot}`
-        : `/api/availability/package?packageId=${target.packageId}&date=${date}&slot=${slot}`;
+        ? `/api/availability?itemId=${target.itemId}&pickupAt=${pickupAtStr}`
+        : `/api/availability/package?packageId=${target.packageId}&pickupAt=${pickupAtStr}`;
 
     fetch(url)
       .then((r) => r.json())
@@ -124,7 +139,7 @@ export default function BookingWidget({ target }: { target: Target }) {
     return () => {
       cancelled = true;
     };
-  }, [date, slot, target]);
+  }, [pickupAtStr, target]);
 
   const canSubmit = useMemo(() => {
     if (target.kind === "item") return (itemAvailable ?? 0) >= quantity;
@@ -189,8 +204,7 @@ export default function BookingWidget({ target }: { target: Target }) {
             kind: "item" as const,
             itemId: target.itemId,
             quantity,
-            date,
-            slot,
+            pickupAt: pickupAtStr,
             eventName,
             eventAddress,
             notes,
@@ -200,8 +214,7 @@ export default function BookingWidget({ target }: { target: Target }) {
         : {
             kind: "package" as const,
             packageId: target.packageId,
-            date,
-            slot,
+            pickupAt: pickupAtStr,
             eventName,
             eventAddress,
             notes,
@@ -331,12 +344,9 @@ export default function BookingWidget({ target }: { target: Target }) {
             equipmentLines={[
               target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName,
             ]}
-            deliveryLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
-              SLOTS[slot].label.split(" – ")[0].trim()
-            }`}
-            pickupLabel={`${format(new Date(`${date}T00:00:00`), "MMM d, yyyy")} — ${
-              SLOTS[slot].label.split(" – ")[1].trim()
-            }`}
+            fulfillmentType={fulfillmentType}
+            pickupLabel={format(pickupAtDate, "MMM d, yyyy 'at' h:mm a")}
+            dropoffLabel={format(dropoffAtDate, "MMM d, yyyy 'at' h:mm a")}
           />
         </div>
 
@@ -405,43 +415,47 @@ export default function BookingWidget({ target }: { target: Target }) {
         </p>
       </div>
 
-      <label className={labelClass}>
-        <span className="flex items-center gap-1.5">
-          <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
-        </span>
-        <input
-          type="date"
-          required
-          min={todayStr()}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className={fieldClass}
-        />
-      </label>
+      <div className="grid grid-cols-2 gap-4">
+        <label className={labelClass}>
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-steel" /> Pickup date
+          </span>
+          <input
+            type="date"
+            required
+            min={todayStr()}
+            value={pickupDate}
+            onChange={(e) => setPickupDate(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+        <label className={labelClass}>
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-steel" /> Pickup time
+          </span>
+          <input
+            type="time"
+            required
+            min={MIN_PICKUP_TIME}
+            max={MAX_PICKUP_TIME}
+            value={pickupTime}
+            onChange={(e) => setPickupTime(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+      </div>
 
-      <div>
-        <p className="text-sm font-semibold text-navy">Time slot</p>
-        <div className="mt-1.5 grid grid-cols-2 gap-2">
-          {(Object.keys(SLOTS) as SlotKey[]).map((key) => {
-            const active = slot === key;
-            const Icon = key === "MORNING" ? Sun : Moon;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSlot(key)}
-                className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition ${
-                  active
-                    ? "border-signal bg-signal-light/40 text-navy shadow-sm"
-                    : "border-line text-steel hover:border-signal/50"
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${active ? "text-signal" : "text-steel/60"}`} />
-                <span className="text-xs font-semibold">{SLOTS[key].label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+        Rental runs {RENTAL_HOURS} hours — return due{" "}
+        <span className="font-semibold text-navy">{format(dropoffAtDate, "EEE, MMM d 'at' h:mm a")}</span>.
+        Returns after this time are billed for an additional day.
+      </div>
+
+      <div className="flex items-start gap-2 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+        <Truck className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
+        {fulfillmentType === "DELIVERY"
+          ? "We'll deliver this to your event address at the pickup time above."
+          : "You'll need to pick this up from our location — no delivery is included."}
       </div>
 
       {target.kind === "item" && (
@@ -481,7 +495,7 @@ export default function BookingWidget({ target }: { target: Target }) {
           <span className="flex items-center gap-2">
             {itemAvailable >= quantity && <CheckCircle2 className="h-4 w-4 shrink-0" />}
             <span>
-              {itemAvailable} of {target.maxQuantity} available for that date/slot.
+              {itemAvailable} of {target.maxQuantity} available for that pickup time.
               {itemAvailable < quantity && " Not enough for the quantity requested."}
             </span>
           </span>
@@ -491,8 +505,8 @@ export default function BookingWidget({ target }: { target: Target }) {
             <p className="flex items-center gap-2">
               {pkgBookable && <CheckCircle2 className="h-4 w-4 shrink-0" />}
               {pkgBookable
-                ? "This package is available for that date/slot."
-                : "One or more components are unavailable for that date/slot:"}
+                ? "This package is available for that pickup time."
+                : "One or more components are unavailable for that pickup time:"}
             </p>
             {!pkgBookable && (
               <ul className="mt-1.5 list-disc space-y-0.5 pl-5">

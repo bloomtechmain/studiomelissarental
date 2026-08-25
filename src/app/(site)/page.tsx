@@ -1,29 +1,7 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { Check, ChevronRight, Clock, Sparkles } from "lucide-react";
-import EquipmentCatalog from "@/components/EquipmentCatalog";
+import { ChevronRight, Clock, Sparkles } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  const [packages, categories] = await Promise.all([
-    prisma.package.findMany({
-      where: { active: true },
-      orderBy: { tier: "asc" },
-      include: { components: { include: { item: true } } },
-    }),
-    prisma.category.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        items: {
-          where: { active: true },
-          orderBy: { name: "asc" },
-          include: { units: { where: { status: { in: ["AVAILABLE", "OUT"] } } } },
-        },
-      },
-    }),
-  ]);
-
+export default function HomePage() {
   return (
     <div>
       {/* ---------- Hero ---------- */}
@@ -39,21 +17,21 @@ export default async function HomePage() {
               Sound gear sized to your room.
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-steel">
-              Browse our package tiers or individual equipment, check live availability, and
-              request your booking online. We handle delivery, setup, and pickup.
+              Browse our service packages or individual equipment, check live availability, and
+              request your booking online.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
-                href="#packages"
+                href="/services"
                 className="rounded-full bg-amber px-6 py-3 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.98]"
               >
-                Browse packages
+                Browse services
               </Link>
               <Link
-                href="#catalog"
+                href="/products"
                 className="inline-flex items-center gap-1.5 rounded-full border border-line px-6 py-3 font-semibold text-navy transition hover:border-navy"
               >
-                View equipment
+                View products
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -83,15 +61,15 @@ export default async function HomePage() {
                 <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                   <Clock className="h-4 w-4 shrink-0 text-signal-light" />
                   <div>
-                    <p className="text-sm font-semibold text-white">8:00 AM – 6:00 PM</p>
-                    <p className="text-xs text-signal-light/60">Morning / day rental window</p>
+                    <p className="text-sm font-semibold text-white">Pick your own pickup time</p>
+                    <p className="text-xs text-signal-light/60">Rental runs 21 hours from hand-off</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                   <Clock className="h-4 w-4 shrink-0 text-signal-light" />
                   <div>
-                    <p className="text-sm font-semibold text-white">3:00 PM – 12:00 AM</p>
-                    <p className="text-xs text-signal-light/60">Afternoon / night rental window</p>
+                    <p className="text-sm font-semibold text-white">Real-time availability</p>
+                    <p className="text-xs text-signal-light/60">See exactly what&apos;s free before you book</p>
                   </div>
                 </div>
               </div>
@@ -100,120 +78,39 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---------- Packages ---------- */}
-      <section id="packages" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-20">
-        <div className="max-w-xl">
-          <h2 className="font-display text-3xl font-semibold text-navy">Package tiers</h2>
-          <p className="mt-2 text-steel">
-            A ready-to-book bundle matched to your room size and headcount.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {packages.map((pkg) => {
-            const featured = pkg.tier === 2;
-            return (
-              <Link
-                key={pkg.id}
-                href={`/packages/${pkg.id}`}
-                className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                  featured ? "border-amber/50 shadow-lg shadow-amber/10" : "border-line shadow-sm"
-                }`}
-              >
-                <div className={`h-1.5 w-full ${featured ? "bg-amber" : "bg-signal/60"}`} />
-                {featured && (
-                  <span className="absolute top-5 right-6 rounded-full bg-amber px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-deep shadow-sm">
-                    Best fit
-                  </span>
-                )}
-
-                <div className="flex flex-1 flex-col p-7">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-display text-base font-bold ${
-                        featured ? "bg-amber/15 text-amber-deep" : "bg-navy text-white"
-                      }`}
-                    >
-                      {pkg.tier}
-                    </span>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-steel">
-                        Tier {pkg.tier}
-                      </p>
-                      <p className="font-display text-lg font-semibold text-navy">{pkg.name}</p>
-                    </div>
-                  </div>
-
-                  <p className="mt-4 text-sm leading-relaxed text-steel">{pkg.description}</p>
-
-                  {(Number(pkg.price) > 0 || pkg.tier === 4) && (
-                    <div className="mt-5 border-t border-line pt-5">
-                      {Number(pkg.price) > 0 ? (
-                        <p>
-                          <span className="font-display text-3xl font-semibold text-navy">
-                            ${Number(pkg.price).toFixed(0)}
-                          </span>
-                          <span className="text-sm text-steel"> / rental</span>
-                        </p>
-                      ) : (
-                        <p className="font-display text-2xl font-semibold text-navy">Custom quote</p>
-                      )}
-                    </div>
-                  )}
-
-                  <ul className="mt-4 flex-1 space-y-2.5">
-                    {pkg.components.slice(0, 4).map((c) => (
-                      <li key={c.id} className="flex items-start gap-2.5 text-sm text-navy/80">
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-signal-light/60 text-signal">
-                          <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
-                        </span>
-                        {c.quantity}× {c.item.name}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <span
-                    className={`mt-6 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold transition-all duration-200 ${
-                      featured
-                        ? "bg-navy text-white group-hover:brightness-110"
-                        : "border border-navy/15 text-navy group-hover:border-navy group-hover:bg-navy group-hover:text-white"
-                    }`}
-                  >
-                    {pkg.components.length > 0 ? "Check availability" : "Request a quote"}
-                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ---------- Catalog ---------- */}
-      <section id="catalog" className="border-t border-line bg-white scroll-mt-20">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="max-w-xl">
-            <h2 className="font-display text-3xl font-semibold text-navy">Equipment catalog</h2>
-            <p className="mt-2 text-steel">Book individual items for your own build.</p>
+      {/* ---------- Teaser links ---------- */}
+      <section className="mx-auto grid max-w-6xl gap-6 px-6 py-16 sm:grid-cols-2">
+        <Link
+          href="/services"
+          className="group flex flex-col justify-between rounded-2xl border border-line bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-navy">Services</h2>
+            <p className="mt-2 text-steel">
+              Ready-to-book package tiers — we deliver, set up, and pick up.
+            </p>
           </div>
+          <span className="mt-6 flex w-fit items-center gap-1.5 text-sm font-semibold text-signal">
+            Browse services
+            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
 
-          <div className="mt-8">
-            <EquipmentCatalog
-              categories={categories
-                .filter((cat) => cat.items.length > 0)
-                .map((cat) => ({
-                  id: cat.id,
-                  name: cat.name,
-                  items: cat.items.map((item) => ({
-                    id: item.id,
-                    name: item.name,
-                    dailyRate: Number(item.dailyRate),
-                    unitCount: item.units.length,
-                  })),
-                }))}
-            />
+        <Link
+          href="/products"
+          className="group flex flex-col justify-between rounded-2xl border border-line bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-navy">Products</h2>
+            <p className="mt-2 text-steel">
+              Individual equipment for your own build — pick it up from us.
+            </p>
           </div>
-        </div>
+          <span className="mt-6 flex w-fit items-center gap-1.5 text-sm font-semibold text-signal">
+            View products
+            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
       </section>
     </div>
   );

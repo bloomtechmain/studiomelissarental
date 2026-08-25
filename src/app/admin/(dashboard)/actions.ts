@@ -13,6 +13,7 @@ import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/l
 import { BookingConflictError } from "@/lib/booking";
 import { rentalWindow, parsePickupAt, toDateStr } from "@/lib/rental";
 import { getStripe } from "@/lib/stripe";
+import { sendPaymentLinkEmail, emailConfigured } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import type { BookingStatus, UnitStatus, PaymentMethod, Role } from "@prisma/client";
@@ -226,11 +227,17 @@ export async function updateBookingFinancials(
 // actually went through, is trusted for that (see /api/webhooks/stripe).
 // `origin` is passed from the client (window.location.origin) the same way
 // share links are built elsewhere — see QuoteEditor's shareUrl.
+export type CreateStripePaymentLinkResult = {
+  url: string;
+  emailSent: boolean;
+  emailSkippedReason?: "no_email_on_file" | "not_configured" | "send_failed";
+};
+
 export async function createStripePaymentLink(
   bookingId: string,
   amount: number,
   origin: string
-): Promise<string> {
+): Promise<CreateStripePaymentLinkResult> {
   const session = await requireSession();
   requirePermission(session, "bookings:financials:write");
 
@@ -238,7 +245,10 @@ export async function createStripePaymentLink(
     throw new Error("Amount must be greater than $0.");
   }
 
-  const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+  const booking = await prisma.booking.findUniqueOrThrow({
+    where: { id: bookingId },
+    include: { customer: true },
+  });
 
   const checkoutSession = await getStripe().checkout.sessions.create({
     mode: "payment",
@@ -280,8 +290,41 @@ export async function createStripePaymentLink(
     actorId: session.id,
   });
 
+  // Auto-email the link to the customer instead of relying on staff to copy
+  // and send it by hand. Falls back to a manual-send status (never throws)
+  // when there's no email on file, Resend isn't configured yet, or the send
+  // itself fails — the link is already created and usable either way.
+  let emailSent = false;
+  let emailSkippedReason: CreateStripePaymentLinkResult["emailSkippedReason"];
+  if (!booking.customer.email) {
+    emailSkippedReason = "no_email_on_file";
+  } else if (!emailConfigured()) {
+    emailSkippedReason = "not_configured";
+  } else {
+    try {
+      await sendPaymentLinkEmail({
+        to: booking.customer.email,
+        customerName: booking.customer.name,
+        amount,
+        checkoutUrl: checkoutSession.url,
+        eventName: booking.eventName,
+      });
+      emailSent = true;
+      await logAudit({
+        entity: "Booking",
+        entityId: bookingId,
+        action: "stripe_payment_link_emailed",
+        detail: `Emailed payment link ($${amount.toFixed(2)}) to ${booking.customer.email}`,
+        actorId: session.id,
+      });
+    } catch (err) {
+      emailSkippedReason = "send_failed";
+      console.error("Failed to send payment link email:", err);
+    }
+  }
+
   revalidatePath(`/admin/bookings/${bookingId}`);
-  return checkoutSession.url;
+  return { url: checkoutSession.url, emailSent, emailSkippedReason };
 }
 
 export async function updateBookingRefund(

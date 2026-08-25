@@ -38,6 +38,10 @@ export default function OnlinePaymentPanel({
   const [pending, startTransition] = useTransition();
   const [amount, setAmount] = useState(String(Math.max(balanceDue, 0)));
   const [link, setLink] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<{
+    sent: boolean;
+    reason?: "no_email_on_file" | "not_configured" | "send_failed";
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,11 +49,13 @@ export default function OnlinePaymentPanel({
     e.preventDefault();
     setError(null);
     setLink(null);
+    setEmailStatus(null);
     setCopied(false);
     startTransition(async () => {
       try {
-        const url = await createStripePaymentLink(bookingId, Number(amount), window.location.origin);
-        setLink(url);
+        const result = await createStripePaymentLink(bookingId, Number(amount), window.location.origin);
+        setLink(result.url);
+        setEmailStatus({ sent: result.emailSent, reason: result.emailSkippedReason });
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not create payment link.");
@@ -67,9 +73,9 @@ export default function OnlinePaymentPanel({
     <section className="rounded-2xl border border-line bg-white p-5 shadow-sm sm:col-span-2">
       <h2 className="font-semibold text-navy">Online payment (Stripe)</h2>
       <p className="mt-1 text-xs text-steel">
-        Creates a Stripe-hosted payment link for the customer to pay by card. Once they pay,
-        Stripe confirms it via webhook and the amount is added to &quot;Amount paid so far&quot;
-        automatically.
+        Creates a Stripe-hosted payment link and emails it straight to the customer. Once they
+        pay, Stripe confirms it via webhook and the amount is added to &quot;Amount paid so
+        far&quot; automatically.
       </p>
 
       <form onSubmit={handleCreate} className="mt-3 flex flex-wrap items-end gap-3">
@@ -94,6 +100,18 @@ export default function OnlinePaymentPanel({
       </form>
 
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+
+      {emailStatus && (
+        <p className={`mt-2 text-sm ${emailStatus.sent ? "text-signal" : "text-amber-deep"}`}>
+          {emailStatus.sent
+            ? "Emailed to the customer."
+            : emailStatus.reason === "no_email_on_file"
+              ? "No email on file for this customer — copy the link below and send it manually."
+              : emailStatus.reason === "not_configured"
+                ? "Email sending isn't set up yet — copy the link below and send it manually."
+                : "Couldn't send the email — copy the link below and send it manually."}
+        </p>
+      )}
 
       {link && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-paper px-3 py-2">

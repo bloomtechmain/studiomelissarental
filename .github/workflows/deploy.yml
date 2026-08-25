@@ -17,6 +17,12 @@ jobs:
           script: |
             set -e
             cd ~/app
+            # npm ci can still rewrite platform-specific optional-dependency
+            # fields in package-lock.json when the server's npm version
+            # differs from whatever generated the committed lockfile (seen
+            # twice now) -- discard that drift unconditionally before
+            # pulling so it never blocks the next deploy.
+            git checkout -- package-lock.json
             git pull origin main
             npm ci
             npx prisma generate

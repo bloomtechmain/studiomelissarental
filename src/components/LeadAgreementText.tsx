@@ -13,6 +13,7 @@ export default function LeadAgreementText({
   recommendedTier,
   eventDateLabel,
   eventTimeSlotLabel,
+  dropoffLabel,
   guestCount,
 }: {
   renterName: string;
@@ -24,6 +25,7 @@ export default function LeadAgreementText({
   recommendedTier?: string;
   eventDateLabel?: string;
   eventTimeSlotLabel?: string;
+  dropoffLabel?: string;
   guestCount?: string;
 }) {
   const Field = ({ label, value }: { label: string; value?: string }) => (
@@ -60,9 +62,10 @@ export default function LeadAgreementText({
         <Field label="Event address" value={eventAddress} />
         <Field label="Package tier" value={recommendedTier || "Not sure — to be recommended"} />
         <Field
-          label="Requested date"
+          label="Requested pickup"
           value={[eventDateLabel, eventTimeSlotLabel].filter(Boolean).join(" · ")}
         />
+        <Field label="Return due" value={dropoffLabel} />
         <Field label="Guest count" value={guestCount} />
         <Field label="Rental fee / deposit" value="To be confirmed by Studio Melissa Rental staff" />
       </div>

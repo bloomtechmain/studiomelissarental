@@ -491,6 +491,7 @@ export default function QuoteRequestForm({
           recommendedTier={recommendedTier}
           eventDateLabel={eventDate}
           eventTimeSlotLabel={eventTime ? formatTimeLabel(eventTime) : undefined}
+          dropoffLabel={dropoffLabel ?? undefined}
           guestCount={guestCount}
         />
       </div>

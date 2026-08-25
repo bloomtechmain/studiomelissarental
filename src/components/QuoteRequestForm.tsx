@@ -6,10 +6,9 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Loader2,
-  Moon,
   PartyPopper,
-  Sun,
   Upload,
 } from "lucide-react";
 import { toDateStr } from "@/lib/rental";
@@ -17,14 +16,14 @@ import LeadAgreementText from "@/components/LeadAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
 import { format } from "date-fns";
 
-// Lead.eventTimeSlot is a legacy free-text pre-qualification field, kept
-// as-is per the rolling-pickup migration plan — a rough "when" for a lead,
-// separate from a Booking's actual pickupAt once it converts.
-type SlotKey = "MORNING" | "AFTERNOON";
-const SLOTS: Record<SlotKey, { label: string }> = {
-  MORNING: { label: "8:00 AM – 6:00 PM" },
-  AFTERNOON: { label: "3:00 PM – 12:00 AM" },
-};
+// Business hours for the pickup time picker — matches the booking flow.
+const MIN_PICKUP_TIME = "07:00";
+const MAX_PICKUP_TIME = "20:00";
+const DEFAULT_PICKUP_TIME = "08:00";
+
+function formatTimeLabel(timeStr: string): string {
+  return format(new Date(`2000-01-01T${timeStr}`), "h:mm a");
+}
 
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
@@ -62,7 +61,7 @@ export default function QuoteRequestForm({
   const [phone, setPhone] = useState("");
   const [org, setOrg] = useState("");
   const [eventDate, setEventDate] = useState("");
-  const [eventTimeSlot, setEventTimeSlot] = useState<SlotKey | "">("");
+  const [eventTime, setEventTime] = useState(DEFAULT_PICKUP_TIME);
   const [eventName, setEventName] = useState("");
   const [roomSize, setRoomSize] = useState("");
   const [guestCount, setGuestCount] = useState("");
@@ -91,8 +90,8 @@ export default function QuoteRequestForm({
   function handleContinueFromDate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!eventDate || !eventTimeSlot) {
-      setError("Pick a date and a time slot to continue.");
+    if (!eventDate || !eventTime) {
+      setError("Pick a date and pickup time to continue.");
       return;
     }
     setStep(2);
@@ -175,7 +174,7 @@ export default function QuoteRequestForm({
           phone,
           org,
           eventDate,
-          eventTimeSlot,
+          eventTimeSlot: eventTime ? formatTimeLabel(eventTime) : undefined,
           eventName,
           roomSize,
           guestCount: guestCount ? Number(guestCount) : undefined,
@@ -250,45 +249,36 @@ export default function QuoteRequestForm({
         className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
       >
         <h3 className="font-display text-lg font-semibold text-navy">When&apos;s your event?</h3>
-        <p className="mt-1 text-sm text-steel">Pick a date and time slot to get started.</p>
+        <p className="mt-1 text-sm text-steel">Pick a date and pickup time to get started.</p>
 
-        <label className="mt-5 flex flex-col gap-1.5 text-sm font-semibold text-navy">
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
-          </span>
-          <input
-            type="date"
-            required
-            min={toDateStr(new Date())}
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-
-        <div className="mt-4">
-          <p className="text-sm font-semibold text-navy">Time slot</p>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            {(Object.keys(SLOTS) as SlotKey[]).map((key) => {
-              const active = eventTimeSlot === key;
-              const Icon = key === "MORNING" ? Sun : Moon;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setEventTimeSlot(key)}
-                  className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition ${
-                    active
-                      ? "border-signal bg-signal-light/40 text-navy shadow-sm"
-                      : "border-line text-steel hover:border-signal/50"
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 ${active ? "text-signal" : "text-steel/60"}`} />
-                  <span className="text-xs font-semibold">{SLOTS[key].label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
+            </span>
+            <input
+              type="date"
+              required
+              min={toDateStr(new Date())}
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-steel" /> Pickup time
+            </span>
+            <input
+              type="time"
+              required
+              min={MIN_PICKUP_TIME}
+              max={MAX_PICKUP_TIME}
+              value={eventTime}
+              onChange={(e) => setEventTime(e.target.value)}
+              className={fieldClass}
+            />
+          </label>
         </div>
 
         {error && (
@@ -316,7 +306,7 @@ export default function QuoteRequestForm({
       >
         <div className="flex items-center justify-between rounded-lg bg-paper/60 px-3.5 py-2.5 text-sm">
           <span className="font-medium text-navy">
-            {eventDate} · {eventTimeSlot ? SLOTS[eventTimeSlot].label : ""}
+            {eventDate} · {eventTime ? formatTimeLabel(eventTime) : ""}
           </span>
           <button
             type="button"
@@ -486,7 +476,7 @@ export default function QuoteRequestForm({
           eventAddress={eventAddress}
           recommendedTier={recommendedTier}
           eventDateLabel={eventDate}
-          eventTimeSlotLabel={eventTimeSlot ? SLOTS[eventTimeSlot].label : undefined}
+          eventTimeSlotLabel={eventTime ? formatTimeLabel(eventTime) : undefined}
           guestCount={guestCount}
         />
       </div>

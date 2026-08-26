@@ -23,10 +23,14 @@ const STATUS_COLOR: Record<StripePaymentStatus, string> = {
 export default function OnlinePaymentPanel({
   bookingId,
   balanceDue,
+  bookingFeeAmount,
+  amountPaid,
   payments,
 }: {
   bookingId: string;
   balanceDue: number;
+  bookingFeeAmount: number;
+  amountPaid: number;
   payments: {
     id: string;
     amount: number;
@@ -36,7 +40,13 @@ export default function OnlinePaymentPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [amount, setAmount] = useState(String(Math.max(balanceDue, 0)));
+  // Contract requires the non-refundable booking fee to be collected first,
+  // at signing, with the rest of the balance due later (see rental
+  // agreement Section 3) — default to whichever of those two is still
+  // outstanding instead of always requesting the full balance.
+  const bookingFeeOutstanding = Math.max(Math.round((bookingFeeAmount - amountPaid) * 100) / 100, 0);
+  const defaultAmount = bookingFeeOutstanding > 0 ? bookingFeeOutstanding : Math.max(balanceDue, 0);
+  const [amount, setAmount] = useState(String(defaultAmount));
   const [link, setLink] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<{
     sent: boolean;
@@ -78,6 +88,25 @@ export default function OnlinePaymentPanel({
         far&quot; automatically.
       </p>
 
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        {bookingFeeOutstanding > 0 && (
+          <button
+            type="button"
+            onClick={() => setAmount(String(bookingFeeOutstanding))}
+            className="rounded-full border border-line px-3 py-1 font-semibold text-navy hover:border-signal/60"
+          >
+            Booking fee (${bookingFeeOutstanding.toFixed(2)})
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setAmount(String(Math.max(balanceDue, 0)))}
+          className="rounded-full border border-line px-3 py-1 font-semibold text-navy hover:border-signal/60"
+        >
+          Full balance (${Math.max(balanceDue, 0).toFixed(2)})
+        </button>
+      </div>
+
       <form onSubmit={handleCreate} className="mt-3 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
           Amount to request ($)
@@ -98,6 +127,12 @@ export default function OnlinePaymentPanel({
           {pending ? "Creating…" : "Create payment link"}
         </button>
       </form>
+      {bookingFeeOutstanding > 0 && (
+        <p className="mt-1 text-xs text-steel">
+          Contract requires the booking fee first, at signing — the balance isn&apos;t due until 3
+          days before the event.
+        </p>
+      )}
 
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
 

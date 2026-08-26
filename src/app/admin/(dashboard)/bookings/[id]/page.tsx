@@ -59,6 +59,7 @@ export default async function AdminBookingDetailPage({
   const chargesTotal = booking.charges.reduce((s, c) => s + Number(c.unitPrice) * c.quantity, 0);
   const balanceDue =
     Number(booking.rentalFee) + Number(booking.securityDeposit) + chargesTotal - Number(booking.amountPaid);
+  const bookingFeeAmount = Math.round(Number(booking.rentalFee) * (bookingFeePercent / 100) * 100) / 100;
   const showCancellationReference = !["CANCELLED", "COMPLETED"].includes(booking.status);
   const refund = computeCancellationRefund({
     startAt: booking.startAt,
@@ -146,6 +147,8 @@ export default async function AdminBookingDetailPage({
         <OnlinePaymentPanel
           bookingId={booking.id}
           balanceDue={balanceDue}
+          bookingFeeAmount={bookingFeeAmount}
+          amountPaid={Number(booking.amountPaid)}
           payments={booking.stripePayments.map((p) => ({
             id: p.id,
             amount: Number(p.amount),

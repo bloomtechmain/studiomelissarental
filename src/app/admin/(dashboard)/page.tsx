@@ -1,12 +1,63 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { format, isPast, isToday } from "date-fns";
 import { Clock3, CalendarClock, Truck, Wrench, Target, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+function greeting(hour: number) {
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+const CARD =
+  "rounded-2xl border border-line bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md overflow-hidden";
+const ICON_WRAP = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg";
+const COUNT_PILL =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold";
+const EMPTY =
+  "rounded-xl border border-dashed border-line bg-paper/60 px-4 py-5 text-center text-sm text-steel";
+
+function CardHeader({
+  icon,
+  iconClass,
+  title,
+  count,
+  countClass,
+  href,
+}: {
+  icon: ReactNode;
+  iconClass: string;
+  title: string;
+  count: number;
+  countClass: string;
+  href?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between border-b border-line bg-paper/50 px-6 py-4">
+      <div className="flex items-center gap-2.5">
+        <span className={`${ICON_WRAP} ${iconClass}`}>{icon}</span>
+        <h2 className="font-semibold text-navy">{title}</h2>
+        {count > 0 && <span className={`${COUNT_PILL} ${countClass}`}>{count}</span>}
+      </div>
+      {href && (
+        <Link
+          href={href}
+          className="flex items-center gap-1 text-sm font-semibold text-signal transition-colors hover:text-navy"
+        >
+          View all
+          <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default async function AdminDashboardPage() {
+  const session = await getSession();
   const now = new Date();
   const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -44,52 +95,38 @@ export default async function AdminDashboardPage() {
 
   const dueLeadsFiltered = dueLeads.filter((l) => l.followUpOn && (isPast(l.followUpOn) || isToday(l.followUpOn)));
 
-  const CARD =
-    "rounded-2xl border border-line bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md overflow-hidden";
-  const ICON_WRAP = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg";
-  const COUNT_PILL =
-    "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold";
-  const EMPTY =
-    "rounded-xl border border-dashed border-line bg-paper/60 px-4 py-5 text-center text-sm text-steel";
-
-  function CardHeader({
-    icon,
-    iconClass,
-    title,
-    count,
-    countClass,
-    href,
-  }: {
-    icon: ReactNode;
-    iconClass: string;
-    title: string;
-    count: number;
-    countClass: string;
-    href?: string;
-  }) {
-    return (
-      <div className="flex items-center justify-between border-b border-line bg-paper/50 px-6 py-4">
-        <div className="flex items-center gap-2.5">
-          <span className={`${ICON_WRAP} ${iconClass}`}>{icon}</span>
-          <h2 className="font-semibold text-navy">{title}</h2>
-          {count > 0 && <span className={`${COUNT_PILL} ${countClass}`}>{count}</span>}
-        </div>
-        {href && (
-          <Link
-            href={href}
-            className="flex items-center gap-1 text-sm font-semibold text-signal transition-colors hover:text-navy"
-          >
-            View all
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-          </Link>
-        )}
-      </div>
-    );
-  }
+  const stats = [
+    { label: "Pending", count: pending.length, iconClass: "bg-amber/15 text-amber-deep", icon: <Clock3 className="h-4 w-4" strokeWidth={2.25} /> },
+    { label: "Upcoming", count: upcoming.length, iconClass: "bg-signal-light/50 text-signal", icon: <CalendarClock className="h-4 w-4" strokeWidth={2.25} /> },
+    { label: "Out on rental", count: outUnits.length, iconClass: "bg-navy/10 text-navy", icon: <Truck className="h-4 w-4" strokeWidth={2.25} /> },
+    { label: "In maintenance", count: maintenance.length, iconClass: "bg-navy-dark/10 text-navy-dark", icon: <Wrench className="h-4 w-4" strokeWidth={2.25} /> },
+    { label: "Leads due", count: dueLeadsFiltered.length, iconClass: "bg-steel/10 text-steel", icon: <Target className="h-4 w-4" strokeWidth={2.25} /> },
+  ];
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold text-navy">Dashboard</h1>
+      <p className="text-sm font-semibold tracking-wide text-steel uppercase">
+        {format(now, "EEEE, MMMM d")}
+      </p>
+      <h1 className="mt-1 font-display text-3xl font-semibold text-navy">
+        {greeting(now.getHours())}
+        {session?.name ? `, ${session.name.split(" ")[0]}` : ""}
+      </h1>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-line bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.iconClass}`}>
+              {s.icon}
+            </span>
+            <p className="mt-3 font-display text-2xl font-semibold text-navy">{s.count}</p>
+            <p className="text-xs font-semibold tracking-wide text-steel uppercase">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <section className={`${CARD} animate-fade-up`}>

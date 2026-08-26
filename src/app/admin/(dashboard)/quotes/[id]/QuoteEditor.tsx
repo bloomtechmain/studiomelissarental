@@ -10,7 +10,7 @@ import {
   getOrCreateShareLink,
 } from "../actions";
 import type { QuoteStatus } from "@prisma/client";
-import { Trash2, Link2, Check, Copy } from "lucide-react";
+import { Trash2, Link2, Check, Copy, ListOrdered } from "lucide-react";
 
 type Line = { id: string; description: string; quantity: number; unitPrice: number };
 type AddOn = { id: string; name: string; price: number };
@@ -142,8 +142,13 @@ export default function QuoteEditor({
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-navy">Line items</h2>
+      <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal-light/50 text-signal">
+            <ListOrdered className="h-4 w-4" strokeWidth={2.25} />
+          </span>
+          <h2 className="font-semibold text-navy">Line items</h2>
+        </div>
         <select
           value={status}
           disabled={pending}
@@ -226,9 +231,15 @@ export default function QuoteEditor({
 
       <div className="mt-5 border-t border-line pt-4">
         {converted ? (
-          <p className="text-sm font-semibold text-signal">
-            Converted — <a href={`/admin/bookings/${converted}`} className="underline">view booking →</a>
-          </p>
+          <div>
+            <p className="mb-2 text-sm font-semibold text-signal">Converted to a booking.</p>
+            <a
+              href={`/admin/bookings/${converted}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-amber-deep transition hover:brightness-95"
+            >
+              View booking →
+            </a>
+          </div>
         ) : (
           <button
             disabled={pending || !hasCustomer}

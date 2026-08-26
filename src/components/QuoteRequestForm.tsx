@@ -2,14 +2,24 @@
 
 import { useState } from "react";
 import {
+  Building2,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
   Loader2,
+  Mail,
+  MapPin,
+  MessageSquare,
   PartyPopper,
+  Phone,
+  Ruler,
+  Sparkles,
   Upload,
+  User,
+  Users,
 } from "lucide-react";
 import { toDateStr, RENTAL_HOURS } from "@/lib/rental";
 import LeadAgreementText from "@/components/LeadAgreementText";
@@ -28,6 +38,65 @@ function formatTimeLabel(timeStr: string): string {
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+
+const STEPS = [
+  { n: 1, label: "Event date" },
+  { n: 2, label: "Your details" },
+  { n: 3, label: "Sign & send" },
+] as const;
+
+function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
+  return (
+    <div className="mb-7 flex items-center">
+      {STEPS.map((s, i) => (
+        <div key={s.n} className="flex flex-1 items-center last:flex-none">
+          <div className="flex flex-col items-center gap-1.5">
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                current === s.n
+                  ? "bg-navy text-white"
+                  : current > s.n
+                    ? "bg-signal-light/60 text-signal"
+                    : "border border-line bg-white text-steel"
+              }`}
+            >
+              {current > s.n ? <Check className="h-4 w-4" strokeWidth={3} /> : s.n}
+            </span>
+            <span
+              className={`text-[11px] font-semibold tracking-wide uppercase ${
+                current === s.n ? "text-navy" : "text-steel"
+              }`}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div
+              className={`mx-2 mb-5 h-0.5 flex-1 rounded-full transition-colors ${
+                current > s.n ? "bg-signal-light" : "bg-line"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FieldLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: typeof User;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Icon className="h-3.5 w-3.5 text-steel" />
+      {children}
+    </span>
+  );
+}
 
 const SIGNATURE_WIDTH = 772;
 const SIGNATURE_HEIGHT = 229;
@@ -251,10 +320,12 @@ export default function QuoteRequestForm({
 
   if (step === 1) {
     return (
-      <form
-        onSubmit={handleContinueFromDate}
-        className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
-      >
+      <div>
+        <StepIndicator current={1} />
+        <form
+          onSubmit={handleContinueFromDate}
+          className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
+        >
         <h3 className="font-display text-lg font-semibold text-navy">When&apos;s your event?</h3>
         <p className="mt-1 text-sm text-steel">Pick a date and pickup time to get started.</p>
 
@@ -308,16 +379,19 @@ export default function QuoteRequestForm({
           Continue
           <ChevronRight className="h-4 w-4" />
         </button>
-      </form>
+        </form>
+      </div>
     );
   }
 
   if (step === 2) {
     return (
-      <form
-        onSubmit={handleContinueToSign}
-        className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
-      >
+      <div>
+        <StepIndicator current={2} />
+        <form
+          onSubmit={handleContinueToSign}
+          className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
+        >
         <div className="flex items-center justify-between rounded-lg bg-paper/60 px-3.5 py-2.5 text-sm">
           <span className="font-medium text-navy">
             {eventDate} · {eventTime ? formatTimeLabel(eventTime) : ""}
@@ -333,7 +407,7 @@ export default function QuoteRequestForm({
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>
-            Full name *
+            <FieldLabel icon={User}>Full name *</FieldLabel>
             <input
               required
               value={name}
@@ -343,7 +417,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Organization
+            <FieldLabel icon={Building2}>Organization</FieldLabel>
             <input
               value={org}
               onChange={(e) => setOrg(e.target.value)}
@@ -352,7 +426,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Email
+            <FieldLabel icon={Mail}>Email</FieldLabel>
             <input
               type="email"
               value={email}
@@ -362,7 +436,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Phone
+            <FieldLabel icon={Phone}>Phone</FieldLabel>
             <input
               type="tel"
               value={phone}
@@ -372,7 +446,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Event name / venue
+            <FieldLabel icon={PartyPopper}>Event name / venue</FieldLabel>
             <input
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
@@ -381,7 +455,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Guest count
+            <FieldLabel icon={Users}>Guest count</FieldLabel>
             <input
               type="number"
               min={0}
@@ -392,7 +466,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Room / venue size
+            <FieldLabel icon={Ruler}>Room / venue size</FieldLabel>
             <input
               value={roomSize}
               onChange={(e) => setRoomSize(e.target.value)}
@@ -401,7 +475,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            Which tier fits best?
+            <FieldLabel icon={Sparkles}>Which tier fits best?</FieldLabel>
             <select
               value={recommendedTier}
               onChange={(e) => setRecommendedTier(e.target.value)}
@@ -416,7 +490,7 @@ export default function QuoteRequestForm({
             </select>
           </label>
           <label className={`${labelClass} sm:col-span-2`}>
-            Event address
+            <FieldLabel icon={MapPin}>Event address</FieldLabel>
             <input
               value={eventAddress}
               onChange={(e) => setEventAddress(e.target.value)}
@@ -425,7 +499,7 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={`${labelClass} sm:col-span-2`}>
-            Tell us about your event
+            <FieldLabel icon={MessageSquare}>Tell us about your event</FieldLabel>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -462,12 +536,15 @@ export default function QuoteRequestForm({
           Continue to agreement
           <ChevronRight className="h-4 w-4" />
         </button>
-      </form>
+        </form>
+      </div>
     );
   }
 
   return (
-    <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
+    <div>
+      <StepIndicator current={3} />
+      <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
       <button
         type="button"
         onClick={() => setStep(2)}
@@ -553,6 +630,7 @@ export default function QuoteRequestForm({
           </>
         )}
       </button>
+      </div>
     </div>
   );
 }

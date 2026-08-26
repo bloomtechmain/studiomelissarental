@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateLeadStage, setLeadFollowUp, addLeadActivity, convertLeadToCustomer } from "../actions";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { TrendingUp, MessageSquare } from "lucide-react";
 import type { LeadStage } from "@prisma/client";
 
 const STAGES: LeadStage[] = ["NEW", "CONTACTED", "QUOTE_SENT", "BOOKING_CONFIRMED", "COMPLETED", "LOST"];
@@ -66,7 +68,7 @@ export default function LeadPanel({
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-navy">Pipeline stage</h2>
+        <SectionHeader icon={TrendingUp}>Pipeline stage</SectionHeader>
         <div className="mt-3 flex flex-wrap gap-2">
           {STAGES.map((s) => (
             <button
@@ -101,23 +103,26 @@ export default function LeadPanel({
           </button>
         </div>
 
-        <div className="mt-4 border-t border-line pt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
           {customerId ? (
-            <Link href={`/admin/customers/${customerId}`} className="text-sm font-semibold text-signal">
+            <Link
+              href={`/admin/customers/${customerId}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber px-4 py-2 text-sm font-semibold text-amber-deep transition hover:brightness-95"
+            >
               View linked customer →
             </Link>
           ) : (
             <button
               disabled={pending}
               onClick={handleConvert}
-              className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-amber-deep hover:brightness-95 disabled:opacity-50"
+              className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-amber-deep transition hover:brightness-95 disabled:opacity-50"
             >
               Convert to customer
             </button>
           )}
           <Link
             href={`/admin/quotes/new?leadId=${leadId}`}
-            className="ml-3 text-sm font-semibold text-signal"
+            className="inline-flex items-center gap-1.5 rounded-full border border-navy/15 px-4 py-2 text-sm font-semibold text-navy transition hover:border-navy hover:bg-navy hover:text-white"
           >
             Create quote →
           </Link>
@@ -125,7 +130,7 @@ export default function LeadPanel({
       </div>
 
       <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-navy">Activity log</h2>
+        <SectionHeader icon={MessageSquare}>Activity log</SectionHeader>
         <form onSubmit={submitNote} className="mt-3 flex gap-2">
           <input
             value={note}

@@ -74,11 +74,12 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
       </div>
 
       {quote.bookingId && (
-        <p className="mt-4 text-sm">
-          <Link href={`/admin/bookings/${quote.bookingId}`} className="font-semibold text-signal">
-            View converted booking →
-          </Link>
-        </p>
+        <Link
+          href={`/admin/bookings/${quote.bookingId}`}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-amber-deep transition hover:brightness-95"
+        >
+          View converted booking →
+        </Link>
       )}
     </div>
   );

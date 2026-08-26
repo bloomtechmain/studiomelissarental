@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { updateBookingRefund } from "../../actions";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { Undo2 } from "lucide-react";
 
 export default function RefundPanel({
   bookingId,
@@ -36,7 +38,7 @@ export default function RefundPanel({
 
   return (
     <form onSubmit={handleSave} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-      <h2 className="font-semibold text-navy">Refund issued</h2>
+      <SectionHeader icon={Undo2}>Refund issued</SectionHeader>
       {refundedAt && (
         <p className="mt-1 text-xs text-steel">Last recorded {format(refundedAt, "MMM d, yyyy")}</p>
       )}

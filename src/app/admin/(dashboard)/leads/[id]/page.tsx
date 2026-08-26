@@ -15,6 +15,8 @@ const LEAD_TIME_SLOT_LABEL: Record<string, string> = {
 import SignatureBlock from "@/components/SignatureBlock";
 import LeadPanel from "./LeadPanel";
 import CountersignButton from "./CountersignButton";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { CalendarDays, FileText, PenTool, History } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +68,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
         <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-navy">Event details</h2>
+          <SectionHeader icon={CalendarDays}>Event details</SectionHeader>
           <dl className="mt-2 space-y-1 text-sm">
             <div className="flex justify-between">
               <dt className="text-steel">Event date</dt>
@@ -104,7 +106,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
         </section>
 
         <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-navy">Quotes</h2>
+          <SectionHeader icon={FileText}>Quotes</SectionHeader>
           <ul className="mt-2 space-y-1.5">
             {lead.quotes.map((q) => (
               <li key={q.id}>
@@ -120,7 +122,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
 
       {lead.signatureName && lead.signatureCode && (
         <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-navy">Signature</h2>
+          <SectionHeader icon={PenTool}>Signature</SectionHeader>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <SignatureBlock
               name={lead.signatureName}
@@ -204,7 +206,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
       </div>
 
       <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-navy">Timeline</h2>
+        <SectionHeader icon={History}>Timeline</SectionHeader>
         <ul className="mt-3 space-y-3">
           {lead.activities.map((a) => (
             <li key={a.id} className="border-l-2 border-line pl-3 text-sm">

@@ -12,41 +12,42 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="flex items-center">
             <Image src="/logo.png" alt="Studio Melissa Rental" width={148} height={61} priority />
           </Link>
-          <nav className="flex flex-wrap items-center justify-end gap-2.5">
+          <nav className="flex flex-wrap items-center justify-end gap-2">
             <Link
               href="/services"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
             >
               <Package className="h-3.5 w-3.5" strokeWidth={2.25} />
               Services
             </Link>
             <Link
               href="/products"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
             >
               <Volume2 className="h-3.5 w-3.5" strokeWidth={2.25} />
               Products
             </Link>
             <Link
               href="/quote"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
             >
               <MessageSquareText className="h-3.5 w-3.5" strokeWidth={2.25} />
               Request a quote
             </Link>
             <Link
               href="/contact"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
             >
               <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />
               Contact
             </Link>
             <Link
               href="/account"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+              title="Account"
+              className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
             >
-              <User className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Account
+              <User className="h-4 w-4" strokeWidth={2.25} />
+              <span className="sr-only">Account</span>
             </Link>
             <CartNavLink />
           </nav>

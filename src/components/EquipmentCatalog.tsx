@@ -123,7 +123,7 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
                 {cat.items.map((item) => (
                   <div
                     key={item.id}
-                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white p-5 transition-all duration-200 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
+                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
                   >
                     <Link href={`/items/${item.id}`} className="flex flex-col">
                       <div className="flex items-start justify-between gap-3">
@@ -134,9 +134,9 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
                           {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
                         </span>
                       </div>
-                      <p className="mt-4 flex items-center gap-1 font-semibold text-navy">
-                        {item.name}
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      <p className="mt-4 flex min-h-12 items-start gap-1 font-semibold text-navy">
+                        <span className="line-clamp-2">{item.name}</span>
+                        <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                       </p>
                     </Link>
 

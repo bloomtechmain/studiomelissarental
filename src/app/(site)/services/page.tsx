@@ -12,16 +12,25 @@ export default async function ServicesPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <div className="max-w-xl">
-        <h1 className="font-display text-3xl font-semibold text-navy">Services</h1>
-        <p className="mt-2 text-steel">
-          A ready-to-book package matched to your room size and headcount — we deliver, set up,
-          and pick up.
-        </p>
-      </div>
+    <div>
+      <section className="bg-dot-grid relative overflow-hidden border-b border-line bg-signal-light/20">
+        <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_15%_0%,black,transparent)]" />
+        <div className="relative mx-auto max-w-6xl px-6 py-16">
+          <div className="max-w-xl">
+            <p className="tier-pill">Full service</p>
+            <h1 className="mt-4 font-display text-4xl font-semibold text-navy sm:text-5xl">
+              Services
+            </h1>
+            <p className="mt-3 text-lg text-steel">
+              A ready-to-book package matched to your room size and headcount — we deliver, set
+              up, and pick up.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {packages.map((pkg) => {
           const featured = pkg.tier === 2;
           return (
@@ -98,6 +107,7 @@ export default async function ServicesPage() {
             </Link>
           );
         })}
+        </div>
       </div>
     </div>
   );

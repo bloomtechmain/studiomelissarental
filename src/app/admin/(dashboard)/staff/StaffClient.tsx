@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createStaffUser, updateStaffRole, resetStaffPassword, deleteStaffUser } from "../actions";
 import type { Role } from "@prisma/client";
-import { Trash2, KeyRound } from "lucide-react";
+import { Trash2, KeyRound, UserPlus } from "lucide-react";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 type StaffUser = { id: string; name: string; email: string; role: Role };
 
@@ -147,7 +148,7 @@ export default function StaffClient({ staff, currentUserId }: { staff: StaffUser
         onSubmit={handleCreate}
         className="mt-6 flex max-w-lg flex-col gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm"
       >
-        <h2 className="font-semibold text-navy">Add staff account</h2>
+        <SectionHeader icon={UserPlus}>Add staff account</SectionHeader>
         <div className="grid grid-cols-2 gap-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-navy">
             Name

@@ -6,6 +6,7 @@ import { updateAgreementStatus, updateInsuranceStatus, uploadAgreementFile } fro
 import { FileCheck2, ShieldCheck, Upload, FileText } from "lucide-react";
 import { format } from "date-fns";
 import SignatureBlock from "@/components/SignatureBlock";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 export default function AgreementPanel({
   bookingId,
@@ -73,7 +74,7 @@ export default function AgreementPanel({
 
   return (
     <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-      <h2 className="font-semibold text-navy">Agreement &amp; insurance</h2>
+      <SectionHeader icon={ShieldCheck}>Agreement &amp; insurance</SectionHeader>
 
       <label className="mt-3 flex items-start gap-2.5 text-sm">
         <input

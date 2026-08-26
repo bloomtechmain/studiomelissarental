@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { createStripePaymentLink } from "../../actions";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { CreditCard } from "lucide-react";
 import type { StripePaymentStatus } from "@prisma/client";
 
 const STATUS_LABEL: Record<StripePaymentStatus, string> = {
@@ -81,7 +83,7 @@ export default function OnlinePaymentPanel({
 
   return (
     <section className="rounded-2xl border border-line bg-white p-5 shadow-sm sm:col-span-2">
-      <h2 className="font-semibold text-navy">Online payment (Stripe)</h2>
+      <SectionHeader icon={CreditCard}>Online payment (Stripe)</SectionHeader>
       <p className="mt-1 text-xs text-steel">
         Creates a Stripe-hosted payment link and emails it straight to the customer. Once they
         pay, Stripe confirms it via webhook and the amount is added to &quot;Amount paid so

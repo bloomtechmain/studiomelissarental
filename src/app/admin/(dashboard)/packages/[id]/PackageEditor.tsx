@@ -8,7 +8,8 @@ import {
   updatePackageComponentQuantity,
   removePackageComponent,
 } from "../../actions";
-import { Trash2 } from "lucide-react";
+import { Trash2, Layers, Package } from "lucide-react";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 type Component = { id: string; itemId: string; itemName: string; quantity: number };
 type ItemOption = { id: string; name: string; unitCount: number };
@@ -82,7 +83,7 @@ export default function PackageEditor({
         onSubmit={handleSaveDetails}
         className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm"
       >
-        <h2 className="font-semibold text-navy">Tier details</h2>
+        <SectionHeader icon={Layers}>Tier details</SectionHeader>
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
           Description
           <textarea
@@ -124,7 +125,7 @@ export default function PackageEditor({
       </form>
 
       <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-navy">Equipment composition</h2>
+        <SectionHeader icon={Package}>Equipment composition</SectionHeader>
         <p className="mt-1 text-xs text-steel">
           When this package is booked, the system assigns specific serial-numbered units for each
           line below.

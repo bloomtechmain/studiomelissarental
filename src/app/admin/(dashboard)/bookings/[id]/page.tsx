@@ -11,12 +11,49 @@ import RefundPanel from "./RefundPanel";
 import RescheduleForm from "./RescheduleForm";
 import SwapUnitControl from "./SwapUnitControl";
 import ChecklistPanel from "./ChecklistPanel";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { getBookingFeePercent } from "@/lib/settings";
 import { computeCancellationRefund } from "@/lib/cancellation";
 import { toDateStr } from "@/lib/rental";
 import { decryptSignatureCode } from "@/lib/signatureEncryption";
+import {
+  ChevronLeft,
+  Users,
+  MapPin,
+  ShieldAlert,
+  PackageSearch,
+  History as HistoryIcon,
+  Mail,
+  CreditCard,
+  CalendarClock,
+  XCircle,
+  CheckCircle2,
+  Plus,
+  Clock,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_STYLE: Record<string, string> = {
+  PENDING: "bg-amber/15 text-amber-deep",
+  CONFIRMED: "bg-signal-light/60 text-signal",
+  PAID_IN_FULL: "bg-signal text-white",
+  OUT: "bg-navy text-white",
+  RETURNED: "border border-line bg-paper text-steel",
+  COMPLETED: "border border-line bg-paper text-steel",
+  CANCELLED: "bg-red-50 text-red-600",
+};
+
+function historyIcon(action: string) {
+  if (action.includes("email")) return { Icon: Mail, className: "bg-signal-light/50 text-signal" };
+  if (action.includes("payment")) return { Icon: CreditCard, className: "bg-signal-light/50 text-signal" };
+  if (action.includes("reschedul")) return { Icon: CalendarClock, className: "bg-amber/15 text-amber-deep" };
+  if (action.includes("cancel")) return { Icon: XCircle, className: "bg-red-50 text-red-600" };
+  if (action.includes("confirm") || action.includes("status"))
+    return { Icon: CheckCircle2, className: "bg-signal-light/50 text-signal" };
+  if (action.includes("creat")) return { Icon: Plus, className: "bg-paper text-steel" };
+  return { Icon: Clock, className: "bg-paper text-steel" };
+}
 
 export default async function AdminBookingDetailPage({
   params,
@@ -72,8 +109,11 @@ export default async function AdminBookingDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/admin/bookings" className="text-sm text-signal">
-        ← All bookings
+      <Link
+        href="/admin/bookings"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
+      >
+        <ChevronLeft className="h-4 w-4" /> All bookings
       </Link>
 
       <div className="mt-3 flex items-start justify-between">
@@ -87,7 +127,11 @@ export default async function AdminBookingDetailPage({
             {booking.fulfillmentType === "DELIVERY" ? "We deliver" : "Customer pickup"}
           </p>
         </div>
-        <span className="rounded-full bg-paper px-3 py-1 text-sm font-semibold text-navy">
+        <span
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${
+            STATUS_STYLE[booking.status] ?? "bg-paper text-navy"
+          }`}
+        >
           {booking.status}
         </span>
       </div>
@@ -112,22 +156,22 @@ export default async function AdminBookingDetailPage({
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <section className="rounded-2xl border border-line bg-white shadow-sm p-5">
-          <h2 className="font-semibold text-navy">Customer</h2>
-          <p className="mt-2 text-navy">{booking.customer.name}</p>
+          <SectionHeader icon={Users}>Customer</SectionHeader>
+          <p className="mt-3 font-medium text-navy">{booking.customer.name}</p>
           {booking.customer.org && <p className="text-steel">{booking.customer.org}</p>}
           {booking.customer.phone && <p className="text-steel">{booking.customer.phone}</p>}
           {booking.customer.email && <p className="text-steel">{booking.customer.email}</p>}
           <Link
             href={`/admin/customers/${booking.customer.id}`}
-            className="mt-2 inline-block text-sm text-signal"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber px-4 py-2 text-sm font-semibold text-amber-deep transition hover:brightness-95"
           >
             View customer →
           </Link>
         </section>
 
         <section className="rounded-2xl border border-line bg-white shadow-sm p-5">
-          <h2 className="font-semibold text-navy">Event</h2>
-          <p className="mt-2 text-steel">{booking.eventAddress || "No address given"}</p>
+          <SectionHeader icon={MapPin}>Event</SectionHeader>
+          <p className="mt-3 text-steel">{booking.eventAddress || "No address given"}</p>
           {booking.package && <p className="mt-2 text-steel">Package: {booking.package.name}</p>}
           {booking.notes && <p className="mt-2 text-steel">Notes: {booking.notes}</p>}
         </section>
@@ -207,8 +251,8 @@ export default async function AdminBookingDetailPage({
 
       {showCancellationReference && (
         <section className="mt-6 rounded-2xl border border-line bg-white shadow-sm p-5">
-          <h2 className="font-semibold text-navy">Cancellation policy — if cancelled today</h2>
-          <p className="mt-1 text-xs text-steel">
+          <SectionHeader icon={ShieldAlert}>Cancellation policy — if cancelled today</SectionHeader>
+          <p className="mt-3 text-xs text-steel">
             Reference only, per the rental agreement — nothing is refunded automatically.{" "}
             {refund.daysUntilEvent >= 0
               ? `${refund.daysUntilEvent} day(s) until the event.`
@@ -233,51 +277,60 @@ export default async function AdminBookingDetailPage({
       )}
 
       <section className="mt-6 rounded-2xl border border-line bg-white shadow-sm p-5">
-        <h2 className="font-semibold text-navy">Equipment assigned (pull sheet)</h2>
-        <table className="mt-3 w-full text-sm">
-          <thead className="text-left text-xs uppercase tracking-wide text-steel">
-            <tr>
-              <th className="py-1">Item</th>
-              <th className="py-1">Serial number</th>
-              <th className="py-1"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {booking.units.map((bu) => (
-              <tr key={bu.id}>
-                <td className="py-1.5 text-navy">{bu.unit.item.name}</td>
-                <td className="py-1.5 text-steel">{bu.unit.serialNumber}</td>
-                <td className="py-1.5 text-right">
-                  <SwapUnitControl
-                    bookingUnitId={bu.id}
-                    canSwap={["PENDING", "CONFIRMED", "PAID_IN_FULL"].includes(booking.status)}
-                  />
-                </td>
-              </tr>
-            ))}
-            {booking.units.length === 0 && (
+        <SectionHeader icon={PackageSearch}>Equipment assigned (pull sheet)</SectionHeader>
+        {booking.units.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-dashed border-line bg-paper/50 px-4 py-6 text-center text-sm text-steel">
+            No units assigned.
+          </p>
+        ) : (
+          <table className="mt-3 w-full text-sm">
+            <thead className="text-left text-xs uppercase tracking-wide text-steel">
               <tr>
-                <td colSpan={3} className="py-3 text-steel">
-                  No units assigned.
-                </td>
+                <th className="py-1">Item</th>
+                <th className="py-1">Serial number</th>
+                <th className="py-1"></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {booking.units.map((bu) => (
+                <tr key={bu.id}>
+                  <td className="py-1.5 text-navy">{bu.unit.item.name}</td>
+                  <td className="py-1.5 text-steel">{bu.unit.serialNumber}</td>
+                  <td className="py-1.5 text-right">
+                    <SwapUnitControl
+                      bookingUnitId={bu.id}
+                      canSwap={["PENDING", "CONFIRMED", "PAID_IN_FULL"].includes(booking.status)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       {auditLog.length > 0 && (
         <section className="mt-6 rounded-2xl border border-line bg-white shadow-sm p-5">
-          <h2 className="font-semibold text-navy">History</h2>
-          <ul className="mt-3 space-y-2">
-            {auditLog.map((a) => (
-              <li key={a.id} className="border-l-2 border-line pl-3 text-sm">
-                <p className="text-navy">{a.detail}</p>
-                <p className="text-xs text-steel">
-                  {format(a.createdAt, "MMM d, yyyy h:mm a")} {a.actor && `· ${a.actor.name}`}
-                </p>
-              </li>
-            ))}
+          <SectionHeader icon={HistoryIcon}>History</SectionHeader>
+          <ul className="mt-4 space-y-4">
+            {auditLog.map((a) => {
+              const { Icon, className } = historyIcon(a.action);
+              return (
+                <li key={a.id} className="flex gap-3">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${className}`}
+                  >
+                    <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+                  </span>
+                  <div className="min-w-0 border-b border-line pb-4 last:border-none last:pb-0">
+                    <p className="text-sm text-navy">{a.detail}</p>
+                    <p className="mt-0.5 text-xs text-steel">
+                      {format(a.createdAt, "MMM d, yyyy h:mm a")} {a.actor && `· ${a.actor.name}`}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

@@ -3,7 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { uploadCompanySignature } from "../actions";
-import { Upload } from "lucide-react";
+import { Upload, PenTool } from "lucide-react";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 export default function CompanySignatureForm({ currentUrl }: { currentUrl: string | null }) {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function CompanySignatureForm({ currentUrl }: { currentUrl: strin
 
   return (
     <div className="mt-6 flex max-w-sm flex-col gap-3 rounded-2xl border border-line bg-white p-5 shadow-sm">
-      <h2 className="font-semibold text-navy">Company signature</h2>
+      <SectionHeader icon={PenTool}>Company signature</SectionHeader>
       <p className="text-xs text-steel">
         Used to countersign leads as Studio Melissa Rental, LLC after a customer has signed.
         PNG only, exactly 772×229px, under 500KB.

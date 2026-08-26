@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import EditCustomerForm from "./EditCustomerForm";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { ClipboardList } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +46,7 @@ export default async function AdminCustomerDetailPage({
         />
 
         <section className="rounded-2xl border border-line bg-white shadow-sm p-5">
-          <h2 className="font-semibold text-navy">Booking history</h2>
+          <SectionHeader icon={ClipboardList}>Booking history</SectionHeader>
           <ul className="mt-3 divide-y divide-line">
             {customer.bookings.map((b) => (
               <li key={b.id} className="py-3">

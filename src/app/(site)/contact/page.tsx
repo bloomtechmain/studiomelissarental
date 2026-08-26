@@ -3,13 +3,22 @@ import { Mail, Phone, MapPin, MessageSquareText } from "lucide-react";
 
 export default function ContactPage() {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-display text-3xl font-semibold text-navy">Contact us</h1>
-      <p className="mt-2 text-steel">
-        Have a question, or need something not covered by our online booking? Reach out.
-      </p>
+    <div>
+      <section className="bg-dot-grid relative overflow-hidden border-b border-line bg-signal-light/20">
+        <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_15%_0%,black,transparent)]" />
+        <div className="relative mx-auto max-w-3xl px-6 py-16">
+          <p className="tier-pill">Get in touch</p>
+          <h1 className="mt-4 font-display text-4xl font-semibold text-navy sm:text-5xl">
+            Contact us
+          </h1>
+          <p className="mt-3 text-lg text-steel">
+            Have a question, or need something not covered by our online booking? Reach out.
+          </p>
+        </div>
+      </section>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
           <Phone className="h-4 w-4 text-signal" strokeWidth={2.25} />
           <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-steel">Phone</p>
@@ -46,6 +55,7 @@ export default function ContactPage() {
         >
           Request a quote
         </Link>
+      </div>
       </div>
     </div>
   );

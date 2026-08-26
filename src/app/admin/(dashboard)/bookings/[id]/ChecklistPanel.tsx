@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookingChecklist } from "../../actions";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { MapPin, Clock, User, Phone, ClipboardList } from "lucide-react";
 
 export default function ChecklistPanel({
@@ -47,10 +48,9 @@ export default function ChecklistPanel({
 
   return (
     <section className="rounded-2xl border border-line bg-white shadow-sm p-5">
-      <h2 className="flex items-center gap-1.5 font-semibold text-navy">
-        <ClipboardList className="h-4 w-4 text-signal" strokeWidth={2.25} />
+      <SectionHeader icon={ClipboardList}>
         {fulfillmentType === "DELIVERY" ? "Delivery / pickup checklist" : "Customer pickup checklist"}
-      </h2>
+      </SectionHeader>
 
       <dl className="mt-3 space-y-2 text-sm">
         {fulfillmentType === "DELIVERY" && (

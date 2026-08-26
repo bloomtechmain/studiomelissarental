@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { format, subMonths, startOfMonth } from "date-fns";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { TrendingUp, PieChart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +45,13 @@ export default async function AdminReportsPage() {
       </p>
 
       <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-semibold text-navy">Revenue by month (last 12 months)</h2>
+        <div className="mb-4 flex items-baseline justify-between border-b border-line pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal-light/50 text-signal">
+              <TrendingUp className="h-4 w-4" strokeWidth={2.25} />
+            </span>
+            <h2 className="font-semibold text-navy">Revenue by month (last 12 months)</h2>
+          </div>
           <p className="font-display text-xl font-semibold text-navy">${totalRevenue.toFixed(0)}</p>
         </div>
         <div className="mt-5 flex items-end gap-2" style={{ height: 160 }}>
@@ -62,7 +69,7 @@ export default async function AdminReportsPage() {
       </section>
 
       <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-navy">Revenue by package tier</h2>
+        <SectionHeader icon={PieChart}>Revenue by package tier</SectionHeader>
         <ul className="mt-3 divide-y divide-line">
           {[...byTier.entries()]
             .sort((a, b) => b[1] - a[1])

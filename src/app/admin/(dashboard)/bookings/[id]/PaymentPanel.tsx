@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookingFinancials } from "../../actions";
+import SectionHeader from "@/components/admin/SectionHeader";
+import { Wallet } from "lucide-react";
 import type { PaymentMethod, BookingStatus } from "@prisma/client";
 
 const METHODS: PaymentMethod[] = ["CASH", "CHECK", "CARD", "BANK_TRANSFER", "OTHER"];
@@ -66,7 +68,7 @@ export default function PaymentPanel({
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
-      <h2 className="font-semibold text-navy">Payment</h2>
+      <SectionHeader icon={Wallet}>Payment</SectionHeader>
       <div className="mt-3 grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
           Rental fee ($)

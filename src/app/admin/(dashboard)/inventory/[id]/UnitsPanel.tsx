@@ -12,7 +12,8 @@ import {
 } from "../../actions";
 import type { UnitStatus } from "@prisma/client";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, Trash2, Wrench } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Wrench, Boxes } from "lucide-react";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 type MaintenanceLog = {
   id: string;
@@ -120,7 +121,7 @@ export default function UnitsPanel({ itemId, units }: { itemId: string; units: U
 
   return (
     <div className="rounded-2xl border border-line bg-white shadow-sm p-5">
-      <h2 className="font-semibold text-navy">Units ({units.length})</h2>
+      <SectionHeader icon={Boxes}>Units ({units.length})</SectionHeader>
 
       <div className="mt-3 space-y-4">
         {units.map((unit) => {

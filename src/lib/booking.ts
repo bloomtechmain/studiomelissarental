@@ -26,7 +26,7 @@ async function resolveCustomer(
   tx: Prisma.TransactionClient,
   customer: { name: string; email?: string; phone: string; org?: string }
 ) {
-  const email = customer.email?.trim() || undefined;
+  const email = customer.email?.trim().toLowerCase() || undefined;
   const existing = email
     ? await tx.customer.findFirst({ where: { email } })
     : await tx.customer.findFirst({ where: { phone: customer.phone } });

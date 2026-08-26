@@ -800,7 +800,7 @@ export async function updateCustomer(
     where: { id },
     data: {
       name: input.name,
-      email: input.email || null,
+      email: input.email?.trim().toLowerCase() || null,
       phone: input.phone || null,
       org: input.org || null,
       notes: input.notes || null,

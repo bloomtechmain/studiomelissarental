@@ -6,7 +6,7 @@ export const pickupAtSchema = z.string().regex(PICKUP_AT_PATTERN, "Expected YYYY
 
 export const customerInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
-  email: z.string().trim().email().max(200).optional().or(z.literal("")),
+  email: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal("")),
   phone: z.string().trim().min(1, "Phone is required").max(50),
   org: z.string().trim().max(200).optional().or(z.literal("")),
 });
@@ -60,26 +60,26 @@ export const bookingInputSchema = z.discriminatedUnion("kind", [
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 
 export const loginSchema = z.object({
-  email: z.string().trim().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
 export const customerSignupSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
-  email: z.string().trim().email(),
+  email: z.string().trim().toLowerCase().email(),
   phone: z.string().trim().max(50).optional().or(z.literal("")),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export const customerLoginSchema = z.object({
-  email: z.string().trim().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
 export const leadInputSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required").max(200),
-    email: z.string().trim().email().max(200).optional().or(z.literal("")),
+    email: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal("")),
     phone: z.string().trim().max(50).optional().or(z.literal("")),
     org: z.string().trim().max(200).optional().or(z.literal("")),
     eventDate: dateStrSchema.optional().or(z.literal("")),

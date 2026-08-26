@@ -49,5 +49,5 @@ export async function requireSession(): Promise<SessionUser> {
 }
 
 export async function findUserByEmail(email: string) {
-  return prisma.user.findUnique({ where: { email } });
+  return prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
 }

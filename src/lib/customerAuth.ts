@@ -53,5 +53,5 @@ export async function requireCustomerSession(): Promise<CustomerSessionUser> {
 }
 
 export async function findCustomerByEmail(email: string) {
-  return prisma.customer.findUnique({ where: { email } });
+  return prisma.customer.findUnique({ where: { email: email.trim().toLowerCase() } });
 }

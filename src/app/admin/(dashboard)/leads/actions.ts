@@ -83,8 +83,9 @@ export async function convertLeadToCustomer(leadId: string) {
 
   let customerId = lead.customerId;
   if (!customerId) {
-    const existing = lead.email
-      ? await prisma.customer.findFirst({ where: { email: lead.email } })
+    const email = lead.email?.trim().toLowerCase() || null;
+    const existing = email
+      ? await prisma.customer.findFirst({ where: { email } })
       : lead.phone
         ? await prisma.customer.findFirst({ where: { phone: lead.phone } })
         : null;
@@ -92,7 +93,7 @@ export async function convertLeadToCustomer(leadId: string) {
     const customer =
       existing ??
       (await prisma.customer.create({
-        data: { name: lead.name, email: lead.email, phone: lead.phone, org: lead.org },
+        data: { name: lead.name, email, phone: lead.phone, org: lead.org },
       }));
     customerId = customer.id;
     await prisma.lead.update({ where: { id: leadId }, data: { customerId } });

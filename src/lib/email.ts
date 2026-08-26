@@ -1,22 +1,32 @@
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 
-// Lazily constructed, same pattern as src/lib/stripe.ts — a missing key
+// Lazily constructed, same pattern as src/lib/stripe.ts — a missing config
 // fails loudly at the point of use rather than crashing every route on
 // boot, since most of the app has nothing to do with sending email.
-let _resend: Resend | null = null;
+let _transporter: Transporter | null = null;
 
-function getResend(): Resend {
-  if (_resend) return _resend;
-  const key = process.env.RESEND_API_KEY;
-  if (!key) {
-    throw new Error("RESEND_API_KEY is not set — add your Resend API key to .env.");
+function getTransporter(): Transporter {
+  if (_transporter) return _transporter;
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+  if (!host || !user || !pass) {
+    throw new Error(
+      "SMTP_HOST, SMTP_USER, and SMTP_PASSWORD must be set — add your Zoho Mail credentials to .env."
+    );
   }
-  _resend = new Resend(key);
-  return _resend;
+  const port = Number(process.env.SMTP_PORT) || 465;
+  _transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+  return _transporter;
 }
 
 export function emailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
 }
 
 export async function sendPaymentLinkEmail(args: {
@@ -26,13 +36,13 @@ export async function sendPaymentLinkEmail(args: {
   checkoutUrl: string;
   eventName?: string | null;
 }): Promise<void> {
-  const resend = getResend();
-  const from = process.env.RESEND_FROM_EMAIL || "Studio Melissa Rental <onboarding@resend.dev>";
+  const transporter = getTransporter();
+  const from = process.env.SMTP_FROM_EMAIL || "Studio Melissa Rental <info@studiomelissarental.com>";
   const subject = `Payment request — $${args.amount.toFixed(2)}${
     args.eventName ? ` for ${args.eventName}` : ""
   }`;
 
-  const { error } = await resend.emails.send({
+  await transporter.sendMail({
     from,
     to: args.to,
     subject,
@@ -60,10 +70,6 @@ export async function sendPaymentLinkEmail(args: {
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(error.message || "Resend failed to send the email.");
-  }
 }
 
 function escapeHtml(s: string): string {

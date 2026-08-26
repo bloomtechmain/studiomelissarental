@@ -38,7 +38,13 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; permissi
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  const nav = NAV.filter((item) => !item.permission || can(session, item.permission));
+  const nav = NAV.filter((item) => !item.permission || can(session, item.permission)).map(
+    (item) => ({
+      href: item.href,
+      label: item.label,
+      icon: <item.icon className="h-4 w-4" strokeWidth={2} />,
+    })
+  );
 
   return (
     <div className="bg-dot-grid flex min-h-screen bg-paper">

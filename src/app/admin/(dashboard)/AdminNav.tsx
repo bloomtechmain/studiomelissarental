@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+// `icon` is a pre-rendered element (built server-side in layout.tsx), not a
+// component reference — Server Components can't pass bare function/component
+// references as props to a Client Component like this one, only already
+//-rendered ReactNode elements.
+type NavItem = { href: string; label: string; icon: ReactNode };
 
 export default function AdminNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
@@ -12,7 +16,6 @@ export default function AdminNav({ items }: { items: NavItem[] }) {
   return (
     <nav className="flex flex-1 flex-col gap-1 p-3">
       {items.map((item) => {
-        const Icon = item.icon;
         // "/admin" (Dashboard) must match exactly, or every page would light
         // it up too — every other section highlights for its own sub-pages
         // as well (e.g. /admin/leads/123 still highlights "Leads").
@@ -28,7 +31,7 @@ export default function AdminNav({ items }: { items: NavItem[] }) {
                 : "text-signal-light/85 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <Icon className="h-4 w-4" strokeWidth={2} />
+            {item.icon}
             {item.label}
             {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-amber" />}
           </Link>

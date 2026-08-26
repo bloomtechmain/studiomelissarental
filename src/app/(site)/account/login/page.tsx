@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { LogIn } from "lucide-react";
@@ -10,7 +9,6 @@ const fieldClass =
   "rounded-2xl border border-line bg-white shadow-sm px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 
 export default function CustomerLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +29,13 @@ export default function CustomerLoginPage() {
         setError(data.error ?? "Login failed.");
         return;
       }
-      router.push("/account");
-      router.refresh();
+      // A soft router.push() here can reuse a stale client-side Router
+      // Cache entry for /account from before login (e.g. the header's
+      // "My Account" link gets prefetched on every public page while
+      // signed out) — a full navigation always re-checks the session
+      // server-side instead of serving that cached pre-auth redirect.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional: router.push() here re-triggers the stale-cache bug above
+      window.location.href = "/account";
     } catch {
       setError("Network error — please try again.");
     } finally {

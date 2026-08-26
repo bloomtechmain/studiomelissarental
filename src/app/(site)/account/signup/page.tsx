@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { UserPlus } from "lucide-react";
@@ -10,7 +9,6 @@ const fieldClass =
   "rounded-2xl border border-line bg-white shadow-sm px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 
 export default function CustomerSignupPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -40,8 +38,10 @@ export default function CustomerSignupPage() {
         setError(data.error ?? "Sign up failed.");
         return;
       }
-      router.push("/account");
-      router.refresh();
+      // See account/login/page.tsx — a full navigation avoids serving a
+      // stale pre-auth Router Cache entry for /account.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional: see account/login/page.tsx
+      window.location.href = "/account";
     } catch {
       setError("Network error — please try again.");
     } finally {

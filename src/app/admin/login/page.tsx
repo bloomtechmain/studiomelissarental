@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Lock } from "lucide-react";
 
@@ -9,7 +8,6 @@ const fieldClass =
   "rounded-2xl border border-line bg-white shadow-sm px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +28,10 @@ export default function AdminLoginPage() {
         setError(data.error ?? "Login failed.");
         return;
       }
-      router.push("/admin");
-      router.refresh();
+      // See src/app/(site)/account/login/page.tsx for why this is a hard
+      // navigation rather than router.push() + router.refresh().
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional: see src/app/(site)/account/login/page.tsx
+      window.location.href = "/admin";
     } catch {
       setError("Network error — please try again.");
     } finally {

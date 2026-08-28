@@ -17,7 +17,6 @@ import {
   Phone,
   Ruler,
   Sparkles,
-  Upload,
   User,
   Users,
 } from "lucide-react";
@@ -98,26 +97,6 @@ function FieldLabel({
   );
 }
 
-const SIGNATURE_WIDTH = 772;
-const SIGNATURE_HEIGHT = 229;
-const SIGNATURE_MAX_BYTES = 500 * 1024;
-
-function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read that image file."));
-    };
-    img.src = url;
-  });
-}
-
 export default function QuoteRequestForm({
   tierOptions,
   defaultTier,
@@ -147,20 +126,20 @@ export default function QuoteRequestForm({
   const [website, setWebsite] = useState(""); // honeypot
 
   const [signatureName, setSignatureName] = useState("");
-  const [signatureFile, setSignatureFile] = useState<File | null>(null);
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
-  const [signatureFileError, setSignatureFileError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [humanVerified, setHumanVerified] = useState(false);
+  const [verifyingHuman, setVerifyingHuman] = useState(false);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [confirmationId, setConfirmationId] = useState<string | null>(null);
   const [signatureResult, setSignatureResult] = useState<{
     name: string;
     code: string;
     ip: string;
     signedAt: string;
-    imageDataUrl: string;
   } | null>(null);
 
   function handleContinueFromDate(e: React.FormEvent) {
@@ -184,67 +163,39 @@ export default function QuoteRequestForm({
       setError("Give us an email or a phone number so we can get back to you.");
       return;
     }
-    if (!signatureName.trim()) setSignatureName(name.trim());
     setStep(3);
   }
 
-  async function handleSignatureFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    setSignatureFileError(null);
-    setSignatureFile(null);
-    setSignaturePreview(null);
-    if (!file) return;
-
-    if (file.type !== "image/png") {
-      setSignatureFileError("Signature must be a PNG file.");
-      return;
-    }
-    if (file.size > SIGNATURE_MAX_BYTES) {
-      setSignatureFileError("Signature file is too large (500KB max).");
-      return;
-    }
-    try {
-      const { width, height } = await readImageDimensions(file);
-      if (width !== SIGNATURE_WIDTH || height !== SIGNATURE_HEIGHT) {
-        setSignatureFileError(
-          `Signature image must be exactly ${SIGNATURE_WIDTH}×${SIGNATURE_HEIGHT}px (this one is ${width}×${height}).`
-        );
-        return;
-      }
-    } catch {
-      setSignatureFileError("Could not read that image file.");
-      return;
-    }
-
-    setSignatureFile(file);
-    setSignaturePreview(URL.createObjectURL(file));
+  function handleVerifyHuman() {
+    if (humanVerified || verifyingHuman) return;
+    setVerifyingHuman(true);
+    setTimeout(() => {
+      setVerifyingHuman(false);
+      setHumanVerified(true);
+    }, 1200);
   }
 
   async function handleSignAndSubmit() {
     setError(null);
     if (!signatureName.trim()) {
-      setError("Type your printed name to sign.");
+      setError("Type your full name to sign.");
       return;
     }
-    if (!signatureFile) {
-      setError("Upload your signature image to sign.");
+    if (!agreedToTerms) {
+      setError("You must agree to the rental agreement terms.");
+      return;
+    }
+    if (!humanVerified) {
+      setError("Please confirm you're not a robot.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const imageDataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("Could not read signature image."));
-        reader.readAsDataURL(signatureFile);
-      });
-
-      const formData = new FormData();
-      formData.set(
-        "data",
-        JSON.stringify({
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name,
           email,
           phone,
@@ -258,23 +209,22 @@ export default function QuoteRequestForm({
           eventAddress,
           notes,
           signatureName: signatureName.trim(),
+          agreedToTerms,
+          humanVerified,
           website,
-        })
-      );
-      formData.set("signature", signatureFile, "signature.png");
-
-      const res = await fetch("/api/leads", { method: "POST", body: formData });
+        }),
+      });
       const resData = await res.json();
       if (!res.ok) {
         throw new Error(resData?.error || "Something went wrong. Please try again.");
       }
+      setConfirmationId(resData.id ?? null);
       if (resData.signature) {
         setSignatureResult({
           name: resData.signature.name,
           code: resData.signature.code,
           ip: resData.signature.ip,
           signedAt: resData.signature.signedAt,
-          imageDataUrl,
         });
       }
       setSubmitted(true);
@@ -298,6 +248,14 @@ export default function QuoteRequestForm({
           Thanks{name ? `, ${name.split(" ")[0]}` : ""} — we&apos;ve got your details and someone
           from our team will follow up shortly with a quote.
         </p>
+        {confirmationId && (
+          <p className="mt-2 text-center text-sm text-steel">
+            Reference:{" "}
+            <span className="font-mono font-semibold text-navy">
+              {confirmationId.slice(0, 8).toUpperCase()}
+            </span>
+          </p>
+        )}
 
         {signatureResult && (
           <div className="mt-5">
@@ -306,11 +264,6 @@ export default function QuoteRequestForm({
               hash={signatureResult.code}
               ip={signatureResult.ip}
               signedAt={format(new Date(signatureResult.signedAt), "MMM d, yyyy 'at' h:mm a")}
-            />
-            <img
-              src={signatureResult.imageDataUrl}
-              alt="Your signature"
-              className="mt-3 w-full rounded-lg border border-line bg-white"
             />
           </div>
         )}
@@ -573,37 +526,18 @@ export default function QuoteRequestForm({
         />
       </div>
 
-      <p className="mt-5 text-sm font-semibold text-navy">Upload your signature</p>
-      <p className="mt-0.5 text-xs text-steel">
-        PNG only, exactly {SIGNATURE_WIDTH}×{SIGNATURE_HEIGHT}px, under 500KB.
-      </p>
+      <label className="mt-5 flex items-start gap-2 text-sm text-steel">
+        <input
+          type="checkbox"
+          checked={agreedToTerms}
+          onChange={(e) => setAgreedToTerms(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
+        />
+        I agree to the rental agreement terms above
+      </label>
 
-      {signaturePreview ? (
-        <div className="mt-1.5">
-          <img
-            src={signaturePreview}
-            alt="Your uploaded signature"
-            className="w-full rounded-lg border border-line bg-white"
-          />
-          <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-navy hover:text-signal">
-            <Upload className="h-3 w-3" />
-            Replace file
-            <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
-          </label>
-        </div>
-      ) : (
-        <label className="mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line bg-paper/40 px-4 py-8 text-center text-sm text-steel transition hover:border-signal/50">
-          <Upload className="h-5 w-5 text-steel/60" />
-          Click to upload your signature (PNG)
-          <input type="file" accept="image/png" onChange={handleSignatureFileChange} className="hidden" />
-        </label>
-      )}
-      {signatureFileError && (
-        <p className="mt-1.5 text-xs font-medium text-red-600">{signatureFileError}</p>
-      )}
-
-      <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy">
-        Printed name
+      <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+        Type your full name to sign
         <input
           value={signatureName}
           onChange={(e) => setSignatureName(e.target.value)}
@@ -611,12 +545,38 @@ export default function QuoteRequestForm({
           className={fieldClass}
         />
       </label>
+      {signatureName.trim() && (
+        <div className="mt-2 rounded-xl border border-line bg-paper/60 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
+          <p className="font-signature text-3xl leading-tight text-navy">{signatureName}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleVerifyHuman}
+        disabled={humanVerified}
+        className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 text-sm font-medium text-navy transition hover:border-signal/40 disabled:cursor-default"
+      >
+        <span
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+            humanVerified ? "border-signal bg-signal text-white" : "border-line bg-white"
+          }`}
+        >
+          {verifyingHuman ? (
+            <Loader2 className="h-3 w-3 animate-spin text-steel" />
+          ) : humanVerified ? (
+            <Check className="h-3 w-3" strokeWidth={3} />
+          ) : null}
+        </span>
+        {verifyingHuman ? "Verifying…" : humanVerified ? "Verified — you're not a robot" : "I'm not a robot"}
+      </button>
 
       {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
 
       <button
         type="button"
-        disabled={submitting}
+        disabled={submitting || !signatureName.trim() || !agreedToTerms || !humanVerified}
         onClick={handleSignAndSubmit}
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amber px-6 py-3 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       >

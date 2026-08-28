@@ -21,6 +21,12 @@ const bookingCommonSchema = {
   // typed name; the hash/IP/timestamp are computed server-side, never
   // trusted from the client.
   signatureName: z.string().trim().min(1, "Type your name to sign the rental agreement").max(200),
+  agreedToTerms: z
+    .boolean()
+    .refine((v) => v === true, { message: "You must agree to the rental agreement terms." }),
+  humanVerified: z
+    .boolean()
+    .refine((v) => v === true, { message: "Please confirm you're not a robot." }),
 };
 
 export const itemBookingSchema = z.object({
@@ -91,6 +97,12 @@ export const leadInputSchema = z
     eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
     notes: z.string().trim().max(2000).optional().or(z.literal("")),
     signatureName: z.string().trim().min(1, "Printed name is required to sign.").max(200),
+    agreedToTerms: z
+      .boolean()
+      .refine((v) => v === true, { message: "You must agree to the rental agreement terms." }),
+    humanVerified: z
+      .boolean()
+      .refine((v) => v === true, { message: "Please confirm you're not a robot." }),
     // honeypot — real visitors never see or fill this field
     website: z.string().max(200).optional().or(z.literal("")),
   })

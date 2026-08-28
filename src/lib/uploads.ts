@@ -63,20 +63,10 @@ export async function readItemPhoto(storedName: string): Promise<Buffer> {
   return fs.readFile(filePath);
 }
 
-// Customer-uploaded e-signatures from the public quote form. Same PII
-// reasoning as agreements — kept outside /public, served only via the
-// authenticated /api/admin/files/signatures/[filename] route.
+// Signature images from customer submissions made before the upload step
+// was removed — kept outside /public, served only via the authenticated
+// /api/admin/files/signatures/[filename] route, so old records still load.
 const SIGNATURES_DIR = path.join(process.cwd(), "uploads", "signatures");
-
-export async function saveSignatureImage(
-  seed: string,
-  buffer: Buffer
-): Promise<{ url: string }> {
-  await fs.mkdir(SIGNATURES_DIR, { recursive: true });
-  const storedName = `${seed}.png`;
-  await fs.writeFile(path.join(SIGNATURES_DIR, storedName), buffer);
-  return { url: `/api/admin/files/signatures/${storedName}` };
-}
 
 export async function readSignatureImage(storedName: string): Promise<Buffer> {
   const filePath = path.join(SIGNATURES_DIR, storedName);

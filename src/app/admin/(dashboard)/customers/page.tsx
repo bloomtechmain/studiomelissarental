@@ -34,7 +34,7 @@ export default async function AdminCustomersPage({
           name="q"
           defaultValue={q ?? ""}
           placeholder="Search name, email, phone, organization…"
-          className="w-full max-w-md rounded border border-line px-3 py-2 text-sm"
+          className="w-full max-w-md rounded border border-line bg-white px-3 py-2 text-sm text-navy placeholder:text-steel/70"
         />
       </form>
 

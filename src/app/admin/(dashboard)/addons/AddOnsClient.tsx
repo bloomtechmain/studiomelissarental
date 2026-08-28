@@ -100,7 +100,7 @@ export default function AddOnsClient({ addOns }: { addOns: AddOn[] }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Extra wireless mic"
-            className="rounded border border-line px-3 py-2 text-sm"
+            className="rounded border border-line bg-white px-3 py-2 text-sm text-navy placeholder:text-steel/70"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
@@ -111,7 +111,7 @@ export default function AddOnsClient({ addOns }: { addOns: AddOn[] }) {
             step="0.01"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="w-28 rounded border border-line px-3 py-2 text-sm"
+            className="w-28 rounded border border-line bg-white px-3 py-2 text-sm text-navy"
           />
         </label>
         <button

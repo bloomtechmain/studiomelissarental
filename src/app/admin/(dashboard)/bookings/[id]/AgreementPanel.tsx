@@ -103,7 +103,7 @@ export default function AgreementPanel({
 
       {signatureName && signatureHash && signatureIp && (
         <div className="mt-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className={signatureImageUrl ? "grid gap-3 sm:grid-cols-2" : ""}>
             <SignatureBlock
               name={signatureName}
               hash={signatureHash}

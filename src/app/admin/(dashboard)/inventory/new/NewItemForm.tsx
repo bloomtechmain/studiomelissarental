@@ -78,7 +78,10 @@ export default function NewItemForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 flex max-w-lg flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-6 flex max-w-lg flex-col gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm"
+    >
       <label className="flex flex-col gap-1 text-sm font-medium text-navy">
         Name
         <input

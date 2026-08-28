@@ -123,7 +123,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
       {lead.signatureName && lead.signatureCode && (
         <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
           <SectionHeader icon={PenTool}>Signature</SectionHeader>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div className={lead.signatureImageUrl ? "mt-3 grid gap-4 sm:grid-cols-2" : "mt-3"}>
             <SignatureBlock
               name={lead.signatureName}
               hash={lead.signatureCode}
@@ -153,7 +153,7 @@ export default async function AdminLeadDetailPage({ params }: { params: Promise<
             </h3>
             {lead.companySignatureCode ? (
               <>
-                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <div className={companySignatureUrl ? "mt-3 grid gap-4 sm:grid-cols-2" : "mt-3"}>
                   <SignatureBlock
                     name="Studio Melissa Rental, LLC"
                     hash={lead.companySignatureCode}

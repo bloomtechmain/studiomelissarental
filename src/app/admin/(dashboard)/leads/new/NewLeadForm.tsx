@@ -43,7 +43,10 @@ export default function NewLeadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 flex max-w-xl flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-6 flex max-w-xl flex-col gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm"
+    >
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-navy">
           Name

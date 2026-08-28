@@ -36,7 +36,17 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <div className="mt-10 rounded-2xl border border-line bg-white p-7 shadow-sm">
+      <div className="mt-10 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+        <iframe
+          title="Map of Central Texas"
+          src="https://www.google.com/maps?q=Central+Texas&output=embed"
+          className="h-80 w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-line bg-white p-7 shadow-sm">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-signal-light/50 text-signal">
             <MessageSquareText className="h-4 w-4" strokeWidth={2.25} />

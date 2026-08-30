@@ -74,6 +74,7 @@ export default async function ProductsPage() {
               name: item.name,
               dailyRate: Number(item.dailyRate),
               unitCount: item.units.length,
+              photoUrl: item.photoUrl,
             })),
           }))}
         />

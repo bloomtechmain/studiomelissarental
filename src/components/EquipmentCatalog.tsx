@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import AddToCartButton from "@/components/AddToCartButton";
 import {
   Search,
@@ -35,7 +36,13 @@ function iconForCategory(name: string) {
   return Volume2;
 }
 
-type Item = { id: string; name: string; dailyRate: number; unitCount: number };
+type Item = {
+  id: string;
+  name: string;
+  dailyRate: number;
+  unitCount: number;
+  photoUrl: string | null;
+};
 type Category = { id: string; name: string; items: Item[] };
 
 export default function EquipmentCatalog({ categories }: { categories: Category[] }) {
@@ -123,24 +130,34 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
                 {cat.items.map((item) => (
                   <div
                     key={item.id}
-                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
+                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
                   >
                     <Link href={`/items/${item.id}`} className="flex flex-col">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-signal-light/50 text-signal transition-colors duration-200 group-hover:bg-signal group-hover:text-white">
-                          <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
-                        </span>
-                        <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold text-steel">
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-navy">
+                        {item.photoUrl ? (
+                          <Image
+                            src={item.photoUrl}
+                            alt={item.name}
+                            fill
+                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                            className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-signal-light/60">
+                            <Icon className="h-10 w-10" strokeWidth={1.75} />
+                          </span>
+                        )}
+                        <span className="absolute right-2.5 top-2.5 rounded-full bg-navy/80 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
                           {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
                         </span>
                       </div>
-                      <p className="mt-4 flex min-h-12 items-start gap-1 font-semibold text-navy">
+                      <p className="mt-4 flex min-h-12 items-start gap-1 px-5 font-semibold text-navy">
                         <span className="line-clamp-2">{item.name}</span>
                         <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                       </p>
                     </Link>
 
-                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3">
+                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-line px-5 pb-5 pt-3">
                       <p className="font-display text-lg font-semibold text-navy">
                         ${item.dailyRate.toFixed(0)}
                         <span className="text-sm font-normal text-steel"> / rental</span>

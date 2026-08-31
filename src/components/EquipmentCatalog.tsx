@@ -39,6 +39,7 @@ function iconForCategory(name: string) {
 type Item = {
   id: string;
   name: string;
+  description: string | null;
   dailyRate: number;
   unitCount: number;
   photoUrl: string | null;
@@ -126,42 +127,48 @@ export default function EquipmentCatalog({ categories }: { categories: Category[
                   {cat.items.length} item{cat.items.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line bg-white">
                 {cat.items.map((item) => (
                   <div
                     key={item.id}
-                    className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:shadow-lg hover:shadow-signal/10"
+                    className="group flex flex-col gap-3 p-4 transition-colors hover:bg-paper/60 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
                   >
-                    <Link href={`/items/${item.id}`} className="flex flex-col">
-                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-navy">
-                        {item.photoUrl ? (
-                          <Image
-                            src={item.photoUrl}
-                            alt={item.name}
-                            fill
-                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-                          />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-signal-light/60">
-                            <Icon className="h-10 w-10" strokeWidth={1.75} />
-                          </span>
-                        )}
-                        <span className="absolute right-2.5 top-2.5 rounded-full bg-navy/80 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-                          {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-navy">
+                      {item.photoUrl ? (
+                        <Image
+                          src={item.photoUrl}
+                          alt={item.name}
+                          fill
+                          sizes="48px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-signal-light/60">
+                          <Icon className="h-5 w-5" strokeWidth={1.75} />
                         </span>
-                      </div>
-                      <p className="mt-4 flex min-h-12 items-start gap-1 px-5 font-semibold text-navy">
-                        <span className="line-clamp-2">{item.name}</span>
-                        <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      )}
+                    </div>
+
+                    <Link href={`/items/${item.id}`} className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1 font-semibold text-navy">
+                        {item.name}
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-steel opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                       </p>
+                      {item.description && (
+                        <p className="mt-0.5 text-sm text-steel">{item.description}</p>
+                      )}
                     </Link>
 
-                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-line px-5 pb-5 pt-3">
-                      <p className="font-display text-lg font-semibold text-navy">
-                        ${item.dailyRate.toFixed(0)}
-                        <span className="text-sm font-normal text-steel"> / rental</span>
-                      </p>
+                    <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end sm:gap-6">
+                      <div className="text-right">
+                        <p className="font-display text-base font-semibold text-navy">
+                          ${item.dailyRate.toFixed(0)}
+                          <span className="text-xs font-normal text-steel"> / day</span>
+                        </p>
+                        <p className="text-xs text-steel">
+                          {item.unitCount} unit{item.unitCount === 1 ? "" : "s"}
+                        </p>
+                      </div>
                       <AddToCartButton
                         itemId={item.id}
                         name={item.name}

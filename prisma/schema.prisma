@@ -366,6 +366,9 @@ model Lead {
   guestCount      Int?
   recommendedTier String?
   eventAddress    String?
+  eventType       String? // Home / Commercial / Corporate / Other — from the quote request form
+  venueType       String? // Indoor / Outdoor — from the quote request form
+  powerAvailable  String? // e.g. "Standard outlets" / "Generator" — from the quote request form
   source          LeadSource     @default(PHONE)
   stage           LeadStage      @default(NEW)
   followUpOn      DateTime?

@@ -1,58 +1,12 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Volume2, Package, MapPin, ChevronRight, MessageSquareText, Mail, User } from "lucide-react";
+import { Volume2, MapPin, ChevronRight } from "lucide-react";
 import { CartProvider } from "@/components/CartProvider";
-import CartNavLink from "@/components/CartNavLink";
+import SiteHeader from "@/components/SiteHeader";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider>
-      <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="Studio Melissa Rental" width={148} height={61} priority />
-          </Link>
-          <nav className="flex flex-wrap items-center justify-end gap-2">
-            <Link
-              href="/services"
-              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
-            >
-              <Package className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Services
-            </Link>
-            <Link
-              href="/products"
-              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
-            >
-              <Volume2 className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Products
-            </Link>
-            <Link
-              href="/quote"
-              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
-            >
-              <MessageSquareText className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Request a quote
-            </Link>
-            <Link
-              href="/contact"
-              className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-navy/20 transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-md"
-            >
-              <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Contact
-            </Link>
-            <Link
-              href="/account"
-              title="Account"
-              className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
-            >
-              <User className="h-4 w-4" strokeWidth={2.25} />
-              <span className="sr-only">Account</span>
-            </Link>
-            <CartNavLink />
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="flex-1">{children}</main>
 

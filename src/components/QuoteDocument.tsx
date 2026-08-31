@@ -28,7 +28,7 @@ export default function QuoteDocument({
   const expired = expiresAt ? expiresAt.getTime() < Date.now() : false;
 
   return (
-    <div className="mx-auto max-w-2xl bg-white px-8 py-12 text-navy print:px-0 print:py-0">
+    <div className="mx-auto max-w-2xl bg-white px-5 py-8 text-navy sm:px-8 sm:py-12 print:px-0 print:py-0">
       {expired && (
         <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber/40 bg-amber/10 px-4 py-3 text-sm font-medium text-amber-deep print:hidden">
           <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={2.25} />
@@ -37,7 +37,7 @@ export default function QuoteDocument({
         </div>
       )}
 
-      <div className="flex items-start justify-between border-b border-line pb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
         <Image src="/logo.png" alt="Studio Melissa Rental" width={150} height={62} priority />
         <div className="text-right text-sm text-steel">
           <p className="font-display text-lg font-semibold text-navy">Quote</p>
@@ -46,7 +46,7 @@ export default function QuoteDocument({
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
+      <div className="mt-6 grid gap-6 text-sm sm:grid-cols-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-steel">Prepared for</p>
           <p className="mt-1 font-medium text-navy">{contact?.name ?? "—"}</p>
@@ -64,28 +64,30 @@ export default function QuoteDocument({
         </div>
       </div>
 
-      <table className="mt-8 w-full text-sm">
-        <thead>
-          <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-steel">
-            <th className="pb-2">Description</th>
-            <th className="pb-2 text-center">Qty</th>
-            <th className="pb-2 text-right">Unit price</th>
-            <th className="pb-2 text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {lines.map((l) => (
-            <tr key={l.id}>
-              <td className="py-2.5 text-navy">{l.description}</td>
-              <td className="py-2.5 text-center text-steel">{l.quantity}</td>
-              <td className="py-2.5 text-right text-steel">${l.unitPrice.toFixed(2)}</td>
-              <td className="py-2.5 text-right font-medium text-navy">
-                ${(l.unitPrice * l.quantity).toFixed(2)}
-              </td>
+      <div className="mt-8 overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-steel">
+              <th className="pb-2">Description</th>
+              <th className="pb-2 text-center">Qty</th>
+              <th className="pb-2 text-right">Unit price</th>
+              <th className="pb-2 text-right">Amount</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {lines.map((l) => (
+              <tr key={l.id}>
+                <td className="py-2.5 text-navy">{l.description}</td>
+                <td className="py-2.5 text-center text-steel">{l.quantity}</td>
+                <td className="py-2.5 text-right text-steel">${l.unitPrice.toFixed(2)}</td>
+                <td className="py-2.5 text-right font-medium text-navy">
+                  ${(l.unitPrice * l.quantity).toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="mt-4 flex justify-end border-t-2 border-navy pt-3">
         <div className="flex w-48 justify-between font-display text-lg font-semibold text-navy">

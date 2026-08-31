@@ -60,7 +60,7 @@ export default function LeadAgreementText({
         <Field label="Phone / Email" value={[phone, email].filter(Boolean).join(" / ")} />
         <Field label="Event name / venue" value={eventName} />
         <Field label="Event address" value={eventAddress} />
-        <Field label="Package tier" value={recommendedTier || "Not sure — to be recommended"} />
+        <Field label="Event type" value={recommendedTier || "Not specified"} />
         <Field
           label="Requested pickup"
           value={[eventDateLabel, eventTimeSlotLabel].filter(Boolean).join(" · ")}

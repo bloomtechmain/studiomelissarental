@@ -439,7 +439,7 @@ export default function CartPage() {
         </div>
 
         <div className="flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClass}>
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5 text-steel" /> Pickup date
@@ -505,7 +505,7 @@ export default function CartPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClass}>
               Name
               <input required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />

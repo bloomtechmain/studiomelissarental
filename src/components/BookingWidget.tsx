@@ -362,7 +362,7 @@ export default function BookingWidget({ target }: { target: Target }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className={labelClass}>
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5 text-steel" /> Pickup date
@@ -470,7 +470,7 @@ export default function BookingWidget({ target }: { target: Target }) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className={labelClass}>
           Name
           <input

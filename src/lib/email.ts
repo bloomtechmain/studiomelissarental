@@ -136,6 +136,134 @@ function renderPaymentLinkEmail(args: {
 </html>`;
 }
 
+export async function sendQuoteRequestNotification(args: {
+  leadId: string;
+  name: string;
+  email: string;
+  phone: string;
+  eventDate: string;
+  eventTimeSlot?: string;
+  eventType: string;
+  guestCount: number;
+  eventAddress: string;
+  venueType: string;
+  powerAvailable?: string;
+  notes?: string;
+}): Promise<void> {
+  const transporter = getTransporter();
+  const from = process.env.SMTP_FROM_EMAIL || "Studio Melissa Rental <info@studiomelissarental.com>";
+  const to = "info@studiomelissarental.com";
+  const subject = `New quote request — ${args.name} (${args.eventDate})`;
+
+  const rows: [string, string][] = [
+    ["Name", args.name],
+    ["Email", args.email],
+    ["Phone", args.phone],
+    ["Event date", args.eventDate],
+    ["Pickup time", args.eventTimeSlot || "Not specified"],
+    ["Event type", args.eventType],
+    ["Guest count", String(args.guestCount)],
+    ["Venue name & address", args.eventAddress],
+    ["Indoor / outdoor", args.venueType],
+    ["Power available on-site", args.powerAvailable || "Not specified"],
+    ["Additional details", args.notes || "—"],
+  ];
+
+  const text = rows.map(([label, value]) => `${label}: ${value}`).join("\n");
+
+  await transporter.sendMail({
+    from,
+    to,
+    replyTo: args.email,
+    subject,
+    text: `New quote request from the website:\n\n${text}\n\nLead ID: ${args.leadId}`,
+    html: renderNotificationEmail("New Quote Request", rows, `Lead ID: ${args.leadId}`),
+  });
+}
+
+export async function sendContactMessageNotification(args: {
+  leadId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+}): Promise<void> {
+  const transporter = getTransporter();
+  const from = process.env.SMTP_FROM_EMAIL || "Studio Melissa Rental <info@studiomelissarental.com>";
+  const to = "info@studiomelissarental.com";
+  const subject = `New contact message — ${args.name}`;
+
+  const rows: [string, string][] = [
+    ["Name", args.name],
+    ["Email", args.email],
+    ["Phone", args.phone || "Not provided"],
+    ["Message", args.message],
+  ];
+
+  const text = rows.map(([label, value]) => `${label}: ${value}`).join("\n");
+
+  await transporter.sendMail({
+    from,
+    to,
+    replyTo: args.email,
+    subject,
+    text: `New message from the website contact form:\n\n${text}\n\nLead ID: ${args.leadId}`,
+    html: renderNotificationEmail("New Contact Message", rows, `Lead ID: ${args.leadId}`),
+  });
+}
+
+function renderNotificationEmail(
+  heading: string,
+  rows: [string, string][],
+  footerNote: string
+): string {
+  const rowsHtml = rows
+    .map(
+      ([label, value]) => `
+                  <tr>
+                    <td style="padding:10px 0; border-bottom:1px solid #dad6cb; color:#5b6672; font-size:13px; font-weight:600; width:180px; vertical-align:top;">${escapeHtml(label)}</td>
+                    <td style="padding:10px 0; border-bottom:1px solid #dad6cb; color:#0c2d4d; font-size:14px; vertical-align:top;">${escapeHtml(value).replace(/\n/g, "<br/>")}</td>
+                  </tr>`
+    )
+    .join("");
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0; padding:0; background-color:#f6f4ef; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f4ef; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px; width:100%; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #dad6cb;">
+            <tr>
+              <td style="background-color:#0c2d4d; padding:20px 32px;">
+                <span style="color:#ffffff; font-size:15px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;">
+                  ${escapeHtml(heading)}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  ${rowsHtml}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#f6f4ef; padding:16px 32px; border-top:1px solid #dad6cb;">
+                <p style="margin:0; color:#5b6672; font-size:12px;">
+                  Studio Melissa Rental — ${escapeHtml(footerNote)}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }

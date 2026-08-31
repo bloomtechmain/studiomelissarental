@@ -13,17 +13,16 @@ import {
   Mail,
   MapPin,
   MessageSquare,
-  PartyPopper,
   Phone,
-  Ruler,
-  Sparkles,
+  PlugZap,
+  ToggleLeft,
   User,
   Users,
 } from "lucide-react";
+import { format } from "date-fns";
 import { toDateStr, RENTAL_HOURS } from "@/lib/rental";
 import LeadAgreementText from "@/components/LeadAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
-import { format } from "date-fns";
 
 // Business hours for the pickup time picker — matches the booking flow.
 const MIN_PICKUP_TIME = "07:00";
@@ -37,6 +36,9 @@ function formatTimeLabel(timeStr: string): string {
 const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+
+const EVENT_TYPES = ["Home", "Commercial", "Corporate", "Other"] as const;
+const POWER_OPTIONS = ["Standard outlets", "Generator", "Not sure"] as const;
 
 const STEPS = [
   { n: 1, label: "Event date" },
@@ -97,17 +99,7 @@ function FieldLabel({
   );
 }
 
-export default function QuoteRequestForm({
-  tierOptions,
-  defaultTier,
-}: {
-  tierOptions: string[];
-  defaultTier?: string;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [org, setOrg] = useState("");
+export default function QuoteRequestForm() {
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState(DEFAULT_PICKUP_TIME);
   const dropoffLabel =
@@ -117,11 +109,15 @@ export default function QuoteRequestForm({
           "EEE, MMM d 'at' h:mm a"
         )
       : null;
-  const [eventName, setEventName] = useState("");
-  const [roomSize, setRoomSize] = useState("");
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [eventType, setEventType] = useState<(typeof EVENT_TYPES)[number]>("Home");
   const [guestCount, setGuestCount] = useState("");
-  const [recommendedTier, setRecommendedTier] = useState(defaultTier ?? "");
   const [eventAddress, setEventAddress] = useState("");
+  const [venueType, setVenueType] = useState<"Indoor" | "Outdoor">("Indoor");
+  const [powerAvailable, setPowerAvailable] = useState("");
   const [notes, setNotes] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
 
@@ -142,11 +138,11 @@ export default function QuoteRequestForm({
     signedAt: string;
   } | null>(null);
 
-  function handleContinueFromDate(e: React.FormEvent) {
+  function handleContinue(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!eventDate || !eventTime) {
-      setError("Pick a date and pickup time to continue.");
+      setError("Pick a date and time to continue.");
       return;
     }
     setStep(2);
@@ -155,12 +151,17 @@ export default function QuoteRequestForm({
   function handleContinueToSign(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!name.trim()) {
-      setError("Full name is required.");
+
+    if (!name.trim() || !email.trim() || !phone.trim()) {
+      setError("Name, email, and phone are required.");
       return;
     }
-    if (!email.trim() && !phone.trim()) {
-      setError("Give us an email or a phone number so we can get back to you.");
+    if (!guestCount) {
+      setError("Guest count is required.");
+      return;
+    }
+    if (!eventAddress.trim()) {
+      setError("Venue name & address is required.");
       return;
     }
     setStep(3);
@@ -199,14 +200,13 @@ export default function QuoteRequestForm({
           name,
           email,
           phone,
-          org,
           eventDate,
-          eventTimeSlot: eventTime ? formatTimeLabel(eventTime) : undefined,
-          eventName,
-          roomSize,
-          guestCount: guestCount ? Number(guestCount) : undefined,
-          recommendedTier,
+          eventTimeSlot: formatTimeLabel(eventTime),
+          eventType,
+          guestCount: Number(guestCount),
           eventAddress,
+          venueType,
+          powerAvailable,
           notes,
           signatureName: signatureName.trim(),
           agreedToTerms,
@@ -237,28 +237,25 @@ export default function QuoteRequestForm({
 
   if (submitted) {
     return (
-      <div className="animate-fade-up rounded-2xl border border-line bg-white p-8 shadow-sm">
+      <div className="animate-fade-up rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-signal-light/50 text-signal">
-          <PartyPopper className="h-6 w-6" strokeWidth={2.25} />
+          <CheckCircle2 className="h-6 w-6" strokeWidth={2.25} />
         </span>
-        <h3 className="mt-4 text-center font-display text-xl font-semibold text-navy">
-          Request sent
-        </h3>
-        <p className="mt-2 text-center text-sm leading-relaxed text-steel">
-          Thanks{name ? `, ${name.split(" ")[0]}` : ""} — we&apos;ve got your details and someone
-          from our team will follow up shortly with a quote.
+        <h3 className="mt-4 font-display text-xl font-semibold text-navy">Request sent</h3>
+        <p className="mt-2 text-sm leading-relaxed text-steel">
+          Thanks{name ? `, ${name.split(" ")[0]}` : ""} — we&apos;ve got your details and will
+          follow up with a custom quote, usually within one business day.
         </p>
         {confirmationId && (
-          <p className="mt-2 text-center text-sm text-steel">
+          <p className="mt-2 text-sm text-steel">
             Reference:{" "}
             <span className="font-mono font-semibold text-navy">
               {confirmationId.slice(0, 8).toUpperCase()}
             </span>
           </p>
         )}
-
         {signatureResult && (
-          <div className="mt-5">
+          <div className="mt-5 text-left">
             <SignatureBlock
               name={signatureResult.name}
               hash={signatureResult.code}
@@ -276,75 +273,71 @@ export default function QuoteRequestForm({
       <div>
         <StepIndicator current={1} />
         <form
-          onSubmit={handleContinueFromDate}
+          onSubmit={handleContinue}
           className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
         >
-        <h3 className="font-display text-lg font-semibold text-navy">When&apos;s your event?</h3>
-        <p className="mt-1 text-sm text-steel">Pick a date and pickup time to get started.</p>
+          <h3 className="font-display text-lg font-semibold text-navy">When&apos;s your event?</h3>
+          <p className="mt-1 text-sm text-steel">Pick a date and pickup time to get started.</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 text-steel" /> Date
-            </span>
-            <input
-              type="date"
-              required
-              min={toDateStr(new Date())}
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-steel" /> Pickup time
-            </span>
-            <input
-              type="time"
-              required
-              min={MIN_PICKUP_TIME}
-              max={MAX_PICKUP_TIME}
-              value={eventTime}
-              onChange={(e) => setEventTime(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-        </div>
-
-        {dropoffLabel && (
-          <div className="mt-4 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
-            Return due <span className="font-semibold text-navy">{dropoffLabel}</span>. Returns
-            after this time are billed for an additional day.
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <label className={labelClass}>
+              <FieldLabel icon={CalendarDays}>Date</FieldLabel>
+              <input
+                type="date"
+                required
+                min={toDateStr(new Date())}
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className={labelClass}>
+              <FieldLabel icon={Clock}>Pickup time</FieldLabel>
+              <input
+                type="time"
+                required
+                min={MIN_PICKUP_TIME}
+                max={MAX_PICKUP_TIME}
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
           </div>
-        )}
 
-        {error && (
-          <p className="mt-4 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600">
-            {error}
-          </p>
-        )}
+          {dropoffLabel && (
+            <div className="mt-4 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+              Return due <span className="font-semibold text-navy">{dropoffLabel}</span>. Returns
+              after this time are billed for an additional day.
+            </div>
+          )}
 
-        <button
-          type="submit"
-          className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-full bg-navy px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
-        >
-          Continue
-          <ChevronRight className="h-4 w-4" />
-        </button>
+          {error && (
+            <p className="mt-4 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-full bg-navy px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Continue
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </form>
       </div>
     );
   }
 
   if (step === 2) {
-    return (
-      <div>
-        <StepIndicator current={2} />
-        <form
-          onSubmit={handleContinueToSign}
-          className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
-        >
+  return (
+    <div>
+      <StepIndicator current={2} />
+      <form
+        onSubmit={handleContinueToSign}
+        className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm"
+      >
         <div className="flex items-center justify-between rounded-lg bg-paper/60 px-3.5 py-2.5 text-sm">
           <span className="font-medium text-navy">
             {eventDate} · {eventTime ? formatTimeLabel(eventTime) : ""}
@@ -352,15 +345,15 @@ export default function QuoteRequestForm({
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="font-semibold text-signal hover:text-navy"
+            className="flex items-center gap-1 font-semibold text-signal hover:text-navy"
           >
-            Change
+            <ChevronLeft className="h-3.5 w-3.5" /> Change
           </button>
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>
-            <FieldLabel icon={User}>Full name *</FieldLabel>
+            <FieldLabel icon={User}>Name *</FieldLabel>
             <input
               required
               value={name}
@@ -370,18 +363,10 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            <FieldLabel icon={Building2}>Organization</FieldLabel>
-            <input
-              value={org}
-              onChange={(e) => setOrg(e.target.value)}
-              className={fieldClass}
-              placeholder="Optional"
-            />
-          </label>
-          <label className={labelClass}>
-            <FieldLabel icon={Mail}>Email</FieldLabel>
+            <FieldLabel icon={Mail}>Email *</FieldLabel>
             <input
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={fieldClass}
@@ -389,9 +374,10 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            <FieldLabel icon={Phone}>Phone</FieldLabel>
+            <FieldLabel icon={Phone}>Phone *</FieldLabel>
             <input
               type="tel"
+              required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={fieldClass}
@@ -399,18 +385,25 @@ export default function QuoteRequestForm({
             />
           </label>
           <label className={labelClass}>
-            <FieldLabel icon={PartyPopper}>Event name / venue</FieldLabel>
-            <input
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
+            <FieldLabel icon={Building2}>Event type *</FieldLabel>
+            <select
+              required
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value as (typeof EVENT_TYPES)[number])}
               className={fieldClass}
-              placeholder="e.g. Smith wedding reception"
-            />
+            >
+              {EVENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </label>
           <label className={labelClass}>
-            <FieldLabel icon={Users}>Guest count</FieldLabel>
+            <FieldLabel icon={Users}>Guest count *</FieldLabel>
             <input
               type="number"
+              required
               min={0}
               value={guestCount}
               onChange={(e) => setGuestCount(e.target.value)}
@@ -418,46 +411,57 @@ export default function QuoteRequestForm({
               placeholder="e.g. 150"
             />
           </label>
-          <label className={labelClass}>
-            <FieldLabel icon={Ruler}>Room / venue size</FieldLabel>
+          <div className={labelClass}>
+            <FieldLabel icon={ToggleLeft}>Indoor / outdoor *</FieldLabel>
+            <div className="flex overflow-hidden rounded-lg border border-line">
+              {(["Indoor", "Outdoor"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setVenueType(opt)}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                    venueType === opt
+                      ? "bg-navy text-white"
+                      : "bg-white text-steel hover:bg-paper"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className={`${labelClass} sm:col-span-2`}>
+            <FieldLabel icon={MapPin}>Venue name &amp; address *</FieldLabel>
             <input
-              value={roomSize}
-              onChange={(e) => setRoomSize(e.target.value)}
+              required
+              value={eventAddress}
+              onChange={(e) => setEventAddress(e.target.value)}
               className={fieldClass}
-              placeholder="e.g. large hall, outdoor tent"
+              placeholder="Venue name, address or city"
             />
           </label>
           <label className={labelClass}>
-            <FieldLabel icon={Sparkles}>Which tier fits best?</FieldLabel>
+            <FieldLabel icon={PlugZap}>Power available on-site</FieldLabel>
             <select
-              value={recommendedTier}
-              onChange={(e) => setRecommendedTier(e.target.value)}
+              value={powerAvailable}
+              onChange={(e) => setPowerAvailable(e.target.value)}
               className={fieldClass}
             >
-              <option value="">Not sure — help me choose</option>
-              {tierOptions.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              <option value="">Not sure / prefer to discuss</option>
+              {POWER_OPTIONS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
                 </option>
               ))}
             </select>
           </label>
           <label className={`${labelClass} sm:col-span-2`}>
-            <FieldLabel icon={MapPin}>Event address</FieldLabel>
-            <input
-              value={eventAddress}
-              onChange={(e) => setEventAddress(e.target.value)}
-              className={fieldClass}
-              placeholder="Venue address or city"
-            />
-          </label>
-          <label className={`${labelClass} sm:col-span-2`}>
-            <FieldLabel icon={MessageSquare}>Tell us about your event</FieldLabel>
+            <FieldLabel icon={MessageSquare}>Additional details</FieldLabel>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className={`${fieldClass} min-h-24 resize-y`}
-              placeholder="What kind of event, any special requirements, timing, etc."
+              placeholder="Specific equipment or brands, on-site technician, or anything else we should know."
             />
           </label>
         </div>
@@ -489,107 +493,110 @@ export default function QuoteRequestForm({
           Continue to agreement
           <ChevronRight className="h-4 w-4" />
         </button>
-        </form>
-      </div>
-    );
+      </form>
+    </div>
+  );
   }
 
   return (
     <div>
       <StepIndicator current={3} />
+
       <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
-      <button
-        type="button"
-        onClick={() => setStep(2)}
-        className="flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" /> Back
-      </button>
-
-      <h3 className="mt-3 font-display text-lg font-semibold text-navy">
-        Review &amp; sign the rental agreement
-      </h3>
-
-      <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
-        <LeadAgreementText
-          renterName={name}
-          org={org}
-          phone={phone}
-          email={email}
-          eventName={eventName}
-          eventAddress={eventAddress}
-          recommendedTier={recommendedTier}
-          eventDateLabel={eventDate}
-          eventTimeSlotLabel={eventTime ? formatTimeLabel(eventTime) : undefined}
-          dropoffLabel={dropoffLabel ?? undefined}
-          guestCount={guestCount}
-        />
-      </div>
-
-      <label className="mt-5 flex items-start gap-2 text-sm text-steel">
-        <input
-          type="checkbox"
-          checked={agreedToTerms}
-          onChange={(e) => setAgreedToTerms(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
-        />
-        I agree to the rental agreement terms above
-      </label>
-
-      <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-navy">
-        Type your full name to sign
-        <input
-          value={signatureName}
-          onChange={(e) => setSignatureName(e.target.value)}
-          placeholder="Your full legal name"
-          className={fieldClass}
-        />
-      </label>
-      {signatureName.trim() && (
-        <div className="mt-2 rounded-xl border border-line bg-paper/60 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
-          <p className="font-signature text-3xl leading-tight text-navy">{signatureName}</p>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={handleVerifyHuman}
-        disabled={humanVerified}
-        className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 text-sm font-medium text-navy transition hover:border-signal/40 disabled:cursor-default"
-      >
-        <span
-          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-            humanVerified ? "border-signal bg-signal text-white" : "border-line bg-white"
-          }`}
+        <button
+          type="button"
+          onClick={() => setStep(2)}
+          className="flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
         >
-          {verifyingHuman ? (
-            <Loader2 className="h-3 w-3 animate-spin text-steel" />
-          ) : humanVerified ? (
-            <Check className="h-3 w-3" strokeWidth={3} />
-          ) : null}
-        </span>
-        {verifyingHuman ? "Verifying…" : humanVerified ? "Verified — you're not a robot" : "I'm not a robot"}
-      </button>
+          <ChevronLeft className="h-3.5 w-3.5" /> Back
+        </button>
 
-      {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+        <h3 className="mt-3 font-display text-lg font-semibold text-navy">
+          Review &amp; sign the rental agreement
+        </h3>
 
-      <button
-        type="button"
-        disabled={submitting || !signatureName.trim() || !agreedToTerms || !humanVerified}
-        onClick={handleSignAndSubmit}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amber px-6 py-3 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Sending…
-          </>
-        ) : (
-          <>
-            <CheckCircle2 className="h-4 w-4" /> Sign &amp; request quote
-          </>
+        <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
+          <LeadAgreementText
+            renterName={name}
+            phone={phone}
+            email={email}
+            eventAddress={eventAddress}
+            recommendedTier={eventType}
+            eventDateLabel={eventDate}
+            eventTimeSlotLabel={eventTime ? formatTimeLabel(eventTime) : undefined}
+            dropoffLabel={dropoffLabel ?? undefined}
+            guestCount={guestCount}
+          />
+        </div>
+
+        <label className="mt-5 flex items-start gap-2 text-sm text-steel">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
+          />
+          I agree to the rental agreement terms above
+        </label>
+
+        <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+          Type your full name to sign
+          <input
+            value={signatureName}
+            onChange={(e) => setSignatureName(e.target.value)}
+            placeholder="Your full legal name"
+            className={fieldClass}
+          />
+        </label>
+        {signatureName.trim() && (
+          <div className="mt-2 rounded-xl border border-line bg-paper/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
+            <p className="font-signature text-3xl leading-tight text-navy">{signatureName}</p>
+          </div>
         )}
-      </button>
+
+        <button
+          type="button"
+          onClick={handleVerifyHuman}
+          disabled={humanVerified}
+          className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 text-sm font-medium text-navy transition hover:border-signal/40 disabled:cursor-default"
+        >
+          <span
+            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+              humanVerified ? "border-signal bg-signal text-white" : "border-line bg-white"
+            }`}
+          >
+            {verifyingHuman ? (
+              <Loader2 className="h-3 w-3 animate-spin text-steel" />
+            ) : humanVerified ? (
+              <Check className="h-3 w-3" strokeWidth={3} />
+            ) : null}
+          </span>
+          {verifyingHuman
+            ? "Verifying…"
+            : humanVerified
+              ? "Verified — you're not a robot"
+              : "I'm not a robot"}
+        </button>
+
+        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+
+        <button
+          type="button"
+          disabled={submitting || !signatureName.trim() || !agreedToTerms || !humanVerified}
+          onClick={handleSignAndSubmit}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amber px-6 py-3 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4" /> Sign &amp; request quote
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

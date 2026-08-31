@@ -82,33 +82,38 @@ export const customerLoginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const leadInputSchema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required").max(200),
-    email: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal("")),
-    phone: z.string().trim().max(50).optional().or(z.literal("")),
-    org: z.string().trim().max(200).optional().or(z.literal("")),
-    eventDate: dateStrSchema.optional().or(z.literal("")),
-    eventTimeSlot: z.string().trim().max(20).optional().or(z.literal("")),
-    eventName: z.string().trim().max(200).optional().or(z.literal("")),
-    roomSize: z.string().trim().max(200).optional().or(z.literal("")),
-    guestCount: z.coerce.number().int().min(0).max(100000).optional(),
-    recommendedTier: z.string().trim().max(100).optional().or(z.literal("")),
-    eventAddress: z.string().trim().max(300).optional().or(z.literal("")),
-    notes: z.string().trim().max(2000).optional().or(z.literal("")),
-    signatureName: z.string().trim().min(1, "Printed name is required to sign.").max(200),
-    agreedToTerms: z
-      .boolean()
-      .refine((v) => v === true, { message: "You must agree to the rental agreement terms." }),
-    humanVerified: z
-      .boolean()
-      .refine((v) => v === true, { message: "Please confirm you're not a robot." }),
-    // honeypot — real visitors never see or fill this field
-    website: z.string().max(200).optional().or(z.literal("")),
-  })
-  .refine((data) => data.email || data.phone, {
-    message: "Provide an email or phone number so we can reach you.",
-    path: ["email"],
-  });
+export const leadInputSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(200),
+  email: z.string().trim().toLowerCase().email().max(200),
+  phone: z.string().trim().min(1, "Phone is required").max(50),
+  eventDate: dateStrSchema,
+  eventTimeSlot: z.string().trim().max(20).optional().or(z.literal("")),
+  eventType: z.enum(["Home", "Commercial", "Corporate", "Other"]),
+  guestCount: z.coerce.number().int().min(0).max(100000),
+  eventAddress: z.string().trim().min(1, "Venue name & address is required").max(300),
+  venueType: z.enum(["Indoor", "Outdoor"]),
+  powerAvailable: z.string().trim().max(100).optional().or(z.literal("")),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+  signatureName: z.string().trim().min(1, "Printed name is required to sign.").max(200),
+  agreedToTerms: z
+    .boolean()
+    .refine((v) => v === true, { message: "You must agree to the rental agreement terms." }),
+  humanVerified: z
+    .boolean()
+    .refine((v) => v === true, { message: "Please confirm you're not a robot." }),
+  // honeypot — real visitors never see or fill this field
+  website: z.string().max(200).optional().or(z.literal("")),
+});
 
 export type LeadInput = z.infer<typeof leadInputSchema>;
+
+export const contactInputSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(200),
+  email: z.string().trim().toLowerCase().email().max(200),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  message: z.string().trim().min(1, "Message is required").max(2000),
+  // honeypot — real visitors never see or fill this field
+  website: z.string().max(200).optional().or(z.literal("")),
+});
+
+export type ContactInput = z.infer<typeof contactInputSchema>;

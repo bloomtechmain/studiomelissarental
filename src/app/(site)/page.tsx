@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import HeroVideoCarousel from "@/components/HeroVideoCarousel";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 import {
   Briefcase,
   Building2,

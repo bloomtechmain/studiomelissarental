@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -6,6 +7,21 @@ import { CategoryIcon } from "@/lib/categoryIcons";
 import CategoryItemList from "@/components/CategoryItemList";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const category = await prisma.category.findUnique({ where: { id }, select: { name: true } });
+  if (!category) return {};
+  return {
+    title: `${category.name} Rental — Items for Rent`,
+    description: `Rent ${category.name.toLowerCase()} à la carte with real-time availability. Pay online and pick up or arrange delivery in Greater Austin.`,
+    alternates: { canonical: `/products/${id}` },
+  };
+}
 
 export default async function ProductCategoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

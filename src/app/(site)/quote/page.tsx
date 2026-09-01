@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,6 +11,13 @@ import {
   Zap,
 } from "lucide-react";
 import QuoteRequestForm from "@/components/QuoteRequestForm";
+
+export const metadata: Metadata = {
+  title: "Request a Quote — Custom Event Audio",
+  description:
+    "Tell us about your event and get a custom PA and audio equipment quote, usually within one business day. Free, no obligation.",
+  alternates: { canonical: "/quote" },
+};
 
 const whatToInclude = [
   "Event date(s) and approximate start/end time",

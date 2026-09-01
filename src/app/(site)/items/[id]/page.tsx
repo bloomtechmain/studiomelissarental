@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -6,6 +7,26 @@ import AddToCartButton from "@/components/AddToCartButton";
 import { ChevronLeft, ShoppingCart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const item = await prisma.item.findUnique({
+    where: { id, active: true },
+    select: { name: true, description: true, category: { select: { name: true } } },
+  });
+  if (!item) return {};
+  return {
+    title: `${item.name} Rental`,
+    description:
+      item.description ??
+      `Rent the ${item.name} — ${item.category.name.toLowerCase()} available for self pickup in Greater Austin.`,
+    alternates: { canonical: `/items/${id}` },
+  };
+}
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

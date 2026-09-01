@@ -1,0 +1,35 @@
+# Studio Melissa Rental
+
+> Professional PA and audio equipment rental for homes, corporate events, and commercial
+> productions across the Greater Austin area. Every package includes delivery, setup,
+> teardown, and pickup within the service area. Based in Pflugerville, TX, serving Austin,
+> Round Rock, Georgetown, Cedar Park, Hutto, Kyle, Buda, San Marcos, and Dripping Springs
+> within a 70km delivery radius.
+
+Studio Melissa Rental offers two ways to rent: fixed-price event packages sized to guest
+count (Services), and à la carte individual equipment rental with real-time availability
+(Items for rent). Every online booking is e-signed and confirmed by the team before pickup
+or delivery.
+
+## Site
+
+- [Home](https://studiomelissarental.com/): Overview of the business, how booking works, and service area.
+- [Services](https://studiomelissarental.com/services): Four fixed-price event packages (Backyard, Gathering, Hall, Field), sized by guest count, each listing included equipment.
+- [Items for rent](https://studiomelissarental.com/products): À la carte equipment catalog grouped by category (Accessories, Cable, Microphones, Mixer, Mixing / DSP, Power Conditioner, Powered Speakers, Powered Subwoofer), with real-time stock and online checkout.
+- [Request a quote](https://studiomelissarental.com/quote): Custom quote request form for events that don't fit a standard package.
+- [Contact](https://studiomelissarental.com/contact): Phone, email, service-area map, and a general contact form.
+
+## Business details
+
+- Phone: (512) 906-8492
+- Email: info@studiomelissarental.com
+- Service area: Greater Austin, TX (Pflugerville-based), 70km delivery radius
+- Booking model: online request with e-signed rental agreement; staff confirm availability and collect the booking fee
+
+## Notes for AI agents and assistants
+
+- Package and item pages are dynamically generated from a live inventory database, so exact
+  prices, stock counts, and item lists change over time — always treat the live page as the
+  source of truth rather than caching this file's contents.
+- `/admin`, `/account`, and `/cart` are private/authenticated areas and are not part of the
+  public content set.

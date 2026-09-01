@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -5,6 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { iconForCategory, imageForCategory } from "@/lib/categoryIcons";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Items for Rent — À La Carte Audio Equipment",
+  description:
+    "Rent individual PA speakers, microphones, mixers, subwoofers, and cables à la carte with real-time availability. Pay online and pick up from our Pflugerville location — no delivery on individual item rentals.",
+  alternates: { canonical: "/products" },
+};
 
 export default async function ProductsPage() {
   const categories = await prisma.category.findMany({
@@ -43,8 +51,9 @@ export default async function ProductsPage() {
             </h1>
             <p className="mt-3 text-lg leading-relaxed text-signal-light/80">
               For anyone building their own system instead of booking a package: rent
-              individual pieces of equipment à la carte, pay online, and pick up or arrange
-              delivery. Availability updates in real time.
+              individual pieces of equipment à la carte and pay online. Self pickup only —
+              no delivery available on individual item rentals. Availability updates in real
+              time.
             </p>
           </div>
         </div>

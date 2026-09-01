@@ -507,37 +507,40 @@ export default function CartPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClass}>
-              Name
+              Name *
               <input required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />
             </label>
             <label className={labelClass}>
-              Phone
+              Phone *
               <input required value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} />
             </label>
             <label className={labelClass}>
-              Email
+              Email *
               <input
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={fieldClass}
               />
             </label>
             <label className={labelClass}>
-              Organization
-              <input value={org} onChange={(e) => setOrg(e.target.value)} className={fieldClass} />
+              Organization *
+              <input required value={org} onChange={(e) => setOrg(e.target.value)} className={fieldClass} />
             </label>
             <label className={`${labelClass} col-span-2`}>
-              Event name
+              Event name *
               <input
+                required
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 className={fieldClass}
               />
             </label>
             <label className={`${labelClass} col-span-2`}>
-              Event address
+              Event address *
               <input
+                required
                 value={eventAddress}
                 onChange={(e) => setEventAddress(e.target.value)}
                 className={fieldClass}

@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Mail, MapPin, MessageSquareText, Navigation, Phone, Share2 } from "lucide-react";
 import ServiceAreaMap from "@/components/ServiceAreaMapLoader";
 import ContactForm from "@/components/ContactForm";
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description:
+    "Have a question before you book, or need help figuring out the right PA system for your event? Reach out — call, email, or send a message.",
+  alternates: { canonical: "/contact" },
+};
 
 const DIRECTIONS_URL = "https://www.google.com/maps/dir/?api=1&destination=30.4394,-97.6200";
 const PHONE_DISPLAY = "(512) 906-8492";

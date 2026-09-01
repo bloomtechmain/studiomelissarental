@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,26 @@ import BookingWidget from "@/components/BookingWidget";
 import { ChevronLeft, Check, Phone } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const pkg = await prisma.package.findUnique({
+    where: { id, active: true },
+    select: { name: true, description: true, tier: true },
+  });
+  if (!pkg) return {};
+  return {
+    title: `${pkg.name} Package (Tier ${pkg.tier}) — Event PA Rental`,
+    description:
+      pkg.description ??
+      `The ${pkg.name} PA package — delivery, setup, teardown, and pickup included across Greater Austin.`,
+    alternates: { canonical: `/packages/${id}` },
+  };
+}
 
 export default async function PackagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Building2, ChevronRight, Home, MapPin, Navigation, Tent, Users } from "lucide-react";
 import ServiceAreaMap from "@/components/ServiceAreaMapLoader";
+
+export const metadata: Metadata = {
+  title: "Event PA Packages — Backyard, Gathering, Hall & Field Tiers",
+  description:
+    "Four fixed-price PA equipment packages sized to your guest count, from backyard parties to 1,000-guest festivals. Delivery, setup, and pickup included across Greater Austin.",
+  alternates: { canonical: "/services" },
+};
 
 const DIRECTIONS_URL = "https://www.google.com/maps/dir/?api=1&destination=30.4394,-97.6200";
 

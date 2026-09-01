@@ -4,6 +4,8 @@ Public website and booking platform for Studio Melissa Rental — professional P
 equipment rental for homes, corporate events, and commercial productions across the Greater
 Austin area. Built with Next.js (App Router), Prisma/PostgreSQL, and Tailwind CSS.
 
+Live site: [https://studiomelissarental.com/](https://studiomelissarental.com/)
+
 ## Features
 
 - **Public site** — home, services (package tiers), products (à la carte equipment catalog),

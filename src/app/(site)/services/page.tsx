@@ -143,7 +143,7 @@ export default async function ServicesPage() {
                 </p>
                 <p className="font-display text-2xl font-semibold text-navy">{pkg.name}</p>
 
-                <div className="mt-3 min-h-[108px] rounded-xl border border-signal/20 bg-signal-light/25 p-3.5">
+                <div className="mt-3 min-h-[168px] rounded-xl border border-signal/20 bg-signal-light/25 p-3.5">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-signal">
                     Best for
                   </p>

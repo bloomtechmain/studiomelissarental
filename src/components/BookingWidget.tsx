@@ -1,20 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { RENTAL_HOURS } from "@/lib/rental";
 import RentalAgreementText from "@/components/RentalAgreementText";
 import SignatureBlock from "@/components/SignatureBlock";
 import {
+  Briefcase,
+  Building2,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   Clock,
   CreditCard,
   Loader2,
+  Mail,
+  MapPin,
+  MessageSquare,
   PartyPopper,
+  Phone as PhoneIcon,
+  PlugZap,
+  ToggleLeft,
   Truck,
+  User,
+  Users,
 } from "lucide-react";
 
 // Business hours for the pickup time picker — bounded so a 21h rental
@@ -23,17 +33,12 @@ const MIN_PICKUP_TIME = "07:00";
 const MAX_PICKUP_TIME = "20:00";
 const DEFAULT_PICKUP_TIME = "08:00";
 
+const EVENT_TYPES = ["Home", "Commercial", "Corporate", "Other"] as const;
+const POWER_OPTIONS = ["Standard outlets", "Generator", "Not sure"] as const;
+
 type Target =
   | { kind: "item"; itemId: string; itemName: string; maxQuantity: number }
   | { kind: "package"; packageId: string; packageName: string };
-
-type PackageAvailabilityLine = {
-  itemId: string;
-  itemName: string;
-  required: number;
-  available: number;
-  ok: boolean;
-};
 
 type SignatureResult = { name: string; hash: string; ip: string; signedAt: string };
 
@@ -48,8 +53,67 @@ const fieldClass =
   "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
 const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
+function FieldLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: typeof User;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Icon className="h-3.5 w-3.5 text-steel" />
+      {children}
+    </span>
+  );
+}
+
+const STEPS = [
+  { n: 1, label: "Pickup date" },
+  { n: 2, label: "Your details" },
+  { n: 3, label: "Sign & send" },
+] as const;
+
+function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
+  return (
+    <div className="mb-7 flex items-center">
+      {STEPS.map((s, i) => (
+        <div key={s.n} className="flex flex-1 items-center last:flex-none">
+          <div className="flex flex-col items-center gap-1.5">
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                current === s.n
+                  ? "bg-navy text-white"
+                  : current > s.n
+                    ? "bg-signal-light/60 text-signal"
+                    : "border border-line bg-white text-steel"
+              }`}
+            >
+              {current > s.n ? <Check className="h-4 w-4" strokeWidth={3} /> : s.n}
+            </span>
+            <span
+              className={`text-[11px] font-semibold tracking-wide uppercase ${
+                current === s.n ? "text-navy" : "text-steel"
+              }`}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div
+              className={`mx-2 mb-5 h-0.5 flex-1 rounded-full transition-colors ${
+                current > s.n ? "bg-signal-light" : "bg-line"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BookingWidget({ target }: { target: Target }) {
-  const [step, setStep] = useState<"form" | "review" | "done">("form");
+  const [step, setStep] = useState<"date" | "details" | "review" | "done">("date");
 
   const fulfillmentType: "DELIVERY" | "SELF_PICKUP" = target.kind === "package" ? "DELIVERY" : "SELF_PICKUP";
 
@@ -64,17 +128,16 @@ export default function BookingWidget({ target }: { target: Target }) {
     [pickupAtDate]
   );
 
-  const [checking, setChecking] = useState(false);
-  const [itemAvailable, setItemAvailable] = useState<number | null>(null);
-  const [pkgLines, setPkgLines] = useState<PackageAvailabilityLine[] | null>(null);
-  const [pkgBookable, setPkgBookable] = useState<boolean | null>(null);
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [org, setOrg] = useState("");
   const [eventName, setEventName] = useState("");
   const [eventAddress, setEventAddress] = useState("");
+  const [eventType, setEventType] = useState<(typeof EVENT_TYPES)[number]>("Home");
+  const [guestCount, setGuestCount] = useState("");
+  const [venueType, setVenueType] = useState<"Indoor" | "Outdoor">("Indoor");
+  const [powerAvailable, setPowerAvailable] = useState("");
   const [notes, setNotes] = useState("");
   const [signatureName, setSignatureName] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -86,43 +149,26 @@ export default function BookingWidget({ target }: { target: Target }) {
   const [confirmation, setConfirmation] = useState<{ id: string } | null>(null);
   const [signatureResult, setSignatureResult] = useState<SignatureResult | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setChecking(true);
+  // Event-context fields (event type, guest count, indoor/outdoor, power)
+  // don't have dedicated Booking columns yet — fold them into notes so
+  // nothing the customer entered is silently dropped.
+  const composedNotes = useMemo(() => {
+    const extra = [
+      `Event type: ${eventType}`,
+      guestCount ? `Guest count: ${guestCount}` : null,
+      `Venue: ${venueType}`,
+      powerAvailable ? `Power available: ${powerAvailable}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return notes.trim() ? `${extra}\n\n${notes.trim()}` : extra;
+  }, [eventType, guestCount, venueType, powerAvailable, notes]);
+
+  function handleContinueToDetails(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
-
-    const url =
-      target.kind === "item"
-        ? `/api/availability?itemId=${target.itemId}&pickupAt=${pickupAtStr}`
-        : `/api/availability/package?packageId=${target.packageId}&pickupAt=${pickupAtStr}`;
-
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (target.kind === "item") {
-          setItemAvailable(data.available ?? 0);
-        } else {
-          setPkgLines(data.lines ?? []);
-          setPkgBookable(Boolean(data.bookable));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError("Could not check availability. Please try again.");
-      })
-      .finally(() => {
-        if (!cancelled) setChecking(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pickupAtStr, target]);
-
-  const canSubmit = useMemo(() => {
-    if (target.kind === "item") return (itemAvailable ?? 0) >= quantity;
-    return pkgBookable === true;
-  }, [target, itemAvailable, quantity, pkgBookable]);
+    setStep("details");
+  }
 
   function handleContinueToReview(e: React.FormEvent) {
     e.preventDefault();
@@ -164,7 +210,7 @@ export default function BookingWidget({ target }: { target: Target }) {
             pickupAt: pickupAtStr,
             eventName,
             eventAddress,
-            notes,
+            notes: composedNotes,
             customer: { name, email, phone, org },
             signatureName: signatureName.trim(),
             agreedToTerms,
@@ -176,7 +222,7 @@ export default function BookingWidget({ target }: { target: Target }) {
             pickupAt: pickupAtStr,
             eventName,
             eventAddress,
-            notes,
+            notes: composedNotes,
             customer: { name, email, phone, org },
             signatureName: signatureName.trim(),
             agreedToTerms,
@@ -257,287 +303,337 @@ export default function BookingWidget({ target }: { target: Target }) {
 
   if (step === "review") {
     return (
-      <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
-        <button
-          type="button"
-          onClick={() => setStep("form")}
-          className="flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" /> Back
-        </button>
-
-        <h3 className="mt-3 font-display text-lg font-semibold text-navy">
-          Review &amp; sign the rental agreement
-        </h3>
-        <p className="mt-1 text-sm text-steel">
-          Please review the agreement below, then type your name to sign it electronically.
-        </p>
-
-        <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
-          <RentalAgreementText
-            renterName={name}
-            org={org}
-            phone={phone}
-            email={email}
-            eventName={eventName}
-            eventAddress={eventAddress}
-            equipmentLines={[
-              target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName,
-            ]}
-            fulfillmentType={fulfillmentType}
-            pickupLabel={format(pickupAtDate, "MMM d, yyyy 'at' h:mm a")}
-            dropoffLabel={format(dropoffAtDate, "MMM d, yyyy 'at' h:mm a")}
-          />
-        </div>
-
-        <label className="mt-5 flex items-start gap-2 text-sm text-steel">
-          <input
-            type="checkbox"
-            checked={agreedToTerms}
-            onChange={(e) => setAgreedToTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
-          />
-          I agree to the rental agreement terms above
-        </label>
-
-        <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-navy">
-          Type your full name to sign
-          <input
-            value={signatureName}
-            onChange={(e) => setSignatureName(e.target.value)}
-            placeholder="Your full legal name"
-            className={fieldClass}
-          />
-        </label>
-        {signatureName.trim() && (
-          <div className="mt-2 rounded-xl border border-line bg-paper/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
-            <p className="font-signature text-3xl leading-tight text-navy">{signatureName}</p>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleVerifyHuman}
-          disabled={humanVerified}
-          className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 text-sm font-medium text-navy transition hover:border-signal/40 disabled:cursor-default"
-        >
-          <span
-            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-              humanVerified ? "border-signal bg-signal text-white" : "border-line bg-white"
-            }`}
+      <div>
+        <StepIndicator current={3} />
+        <div className="animate-fade-up rounded-2xl border border-line bg-white p-7 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setStep("details")}
+            className="flex items-center gap-1 text-xs font-semibold text-steel hover:text-navy"
           >
-            {verifyingHuman ? (
-              <Loader2 className="h-3 w-3 animate-spin text-steel" />
-            ) : humanVerified ? (
-              <Check className="h-3 w-3" strokeWidth={3} />
-            ) : null}
-          </span>
-          {verifyingHuman ? "Verifying…" : humanVerified ? "Verified — you're not a robot" : "I'm not a robot"}
-        </button>
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
+          </button>
 
-        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+          <h3 className="mt-3 font-display text-lg font-semibold text-navy">
+            Review &amp; sign the rental agreement
+          </h3>
+          <p className="mt-1 text-sm text-steel">
+            Please review the agreement below, then type your name to sign it electronically.
+          </p>
 
-        <button
-          type="button"
-          disabled={submitting || !signatureName.trim() || !agreedToTerms || !humanVerified}
-          onClick={handleSignAndSubmit}
-          className="mt-5 w-full rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+          <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-line bg-paper/40 p-4">
+            <RentalAgreementText
+              renterName={name}
+              org={org}
+              phone={phone}
+              email={email}
+              eventName={eventName}
+              eventAddress={eventAddress}
+              equipmentLines={[
+                target.kind === "item" ? `${quantity}× ${target.itemName}` : target.packageName,
+              ]}
+              fulfillmentType={fulfillmentType}
+              pickupLabel={format(pickupAtDate, "MMM d, yyyy 'at' h:mm a")}
+              dropoffLabel={format(dropoffAtDate, "MMM d, yyyy 'at' h:mm a")}
+            />
+          </div>
+
+          <label className="mt-5 flex items-start gap-2 text-sm text-steel">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-line"
+            />
+            I agree to the rental agreement terms above
+          </label>
+
+          <label className="mt-4 flex flex-col gap-1.5 text-sm font-semibold text-navy">
+            Type your full name to sign
+            <input
+              value={signatureName}
+              onChange={(e) => setSignatureName(e.target.value)}
+              placeholder="Your full legal name"
+              className={fieldClass}
+            />
+          </label>
+          {signatureName.trim() && (
+            <div className="mt-2 rounded-xl border border-line bg-paper/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-steel">Preview</p>
+              <p className="font-signature text-3xl leading-tight text-navy">{signatureName}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleVerifyHuman}
+            disabled={humanVerified}
+            className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 text-sm font-medium text-navy transition hover:border-signal/40 disabled:cursor-default"
+          >
+            <span
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                humanVerified ? "border-signal bg-signal text-white" : "border-line bg-white"
+              }`}
+            >
+              {verifyingHuman ? (
+                <Loader2 className="h-3 w-3 animate-spin text-steel" />
+              ) : humanVerified ? (
+                <Check className="h-3 w-3" strokeWidth={3} />
+              ) : null}
+            </span>
+            {verifyingHuman ? "Verifying…" : humanVerified ? "Verified — you're not a robot" : "I'm not a robot"}
+          </button>
+
+          {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+
+          <button
+            type="button"
+            disabled={submitting || !signatureName.trim() || !agreedToTerms || !humanVerified}
+            onClick={handleSignAndSubmit}
+            className="mt-5 w-full rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+          >
+            {submitting ? "Submitting…" : "Sign agreement & continue"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "details") {
+    return (
+      <div>
+        <StepIndicator current={2} />
+        <form
+          onSubmit={handleContinueToReview}
+          className="animate-fade-up flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm"
         >
-          {submitting ? "Submitting…" : "Sign agreement & continue"}
-        </button>
+          <div className="flex items-center justify-between rounded-lg bg-paper/60 px-3.5 py-2.5 text-sm">
+            <span className="font-medium text-navy">
+              {pickupDate} · {format(pickupAtDate, "h:mm a")}
+            </span>
+            <button
+              type="button"
+              onClick={() => setStep("date")}
+              className="flex items-center gap-1 font-semibold text-signal hover:text-navy"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" /> Change
+            </button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={labelClass}>
+              <FieldLabel icon={User}>Name *</FieldLabel>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={fieldClass}
+                placeholder="Jane Doe"
+              />
+            </label>
+            <label className={labelClass}>
+              <FieldLabel icon={PhoneIcon}>Phone *</FieldLabel>
+              <input
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className={fieldClass}
+                placeholder="(512) 555-0100"
+              />
+            </label>
+            <label className={labelClass}>
+              <FieldLabel icon={Mail}>Email</FieldLabel>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={fieldClass}
+                placeholder="jane@email.com"
+              />
+            </label>
+            <label className={labelClass}>
+              <FieldLabel icon={Building2}>Event type *</FieldLabel>
+              <select
+                required
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value as (typeof EVENT_TYPES)[number])}
+                className={fieldClass}
+              >
+                {EVENT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              <FieldLabel icon={Users}>Guest count *</FieldLabel>
+              <input
+                type="number"
+                required
+                min={0}
+                value={guestCount}
+                onChange={(e) => setGuestCount(e.target.value)}
+                className={fieldClass}
+                placeholder="e.g. 150"
+              />
+            </label>
+            <div className={labelClass}>
+              <FieldLabel icon={ToggleLeft}>Indoor / outdoor *</FieldLabel>
+              <div className="flex overflow-hidden rounded-lg border border-line">
+                {(["Indoor", "Outdoor"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setVenueType(opt)}
+                    className={`flex-1 py-2.5 text-sm font-semibold transition ${
+                      venueType === opt ? "bg-navy text-white" : "bg-white text-steel hover:bg-paper"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className={labelClass}>
+              <FieldLabel icon={Briefcase}>Organization</FieldLabel>
+              <input value={org} onChange={(e) => setOrg(e.target.value)} className={fieldClass} />
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <FieldLabel icon={PartyPopper}>Event name</FieldLabel>
+              <input
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <FieldLabel icon={MapPin}>Venue name &amp; address</FieldLabel>
+              <input
+                value={eventAddress}
+                onChange={(e) => setEventAddress(e.target.value)}
+                className={fieldClass}
+                placeholder="Venue name, address or city"
+              />
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <FieldLabel icon={PlugZap}>Power available on-site</FieldLabel>
+              <select
+                value={powerAvailable}
+                onChange={(e) => setPowerAvailable(e.target.value)}
+                className={fieldClass}
+              >
+                <option value="">Not sure / prefer to discuss</option>
+                {POWER_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <FieldLabel icon={MessageSquare}>Notes</FieldLabel>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                className={`${fieldClass} resize-y`}
+              />
+            </label>
+          </div>
+
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+          <button
+            type="submit"
+            className="flex items-center justify-center gap-1.5 rounded-full bg-navy px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Continue to agreement
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </form>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleContinueToReview}
-      className="flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm"
-    >
-      <div>
-        <h3 className="font-display text-lg font-semibold text-navy">Request this booking</h3>
-        <p className="mt-1 text-sm text-steel">
-          {target.kind === "item" ? target.itemName : target.packageName}
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className={labelClass}>
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-steel" /> Pickup date
-          </span>
-          <input
-            type="date"
-            required
-            min={todayStr()}
-            value={pickupDate}
-            onChange={(e) => setPickupDate(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={labelClass}>
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-steel" /> Pickup time
-          </span>
-          <input
-            type="time"
-            required
-            min={MIN_PICKUP_TIME}
-            max={MAX_PICKUP_TIME}
-            value={pickupTime}
-            onChange={(e) => setPickupTime(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-      </div>
-
-      <div className="rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
-        Return due{" "}
-        <span className="font-semibold text-navy">{format(dropoffAtDate, "EEE, MMM d 'at' h:mm a")}</span>.
-        Returns after this time are billed for an additional day.
-      </div>
-
-      <div className="flex items-start gap-2 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
-        <Truck className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
-        {fulfillmentType === "DELIVERY"
-          ? "We'll deliver this to your event address at the pickup time above."
-          : "You'll need to pick this up from our location — no delivery is included."}
-      </div>
-
-      {target.kind === "item" && (
-        <label className={labelClass}>
-          Quantity
-          <input
-            type="number"
-            min={1}
-            max={target.maxQuantity}
-            required
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            className={`${fieldClass} w-24`}
-          />
-        </label>
-      )}
-
-      <div
-        className={`rounded-lg border px-4 py-3 text-sm transition-colors ${
-          checking
-            ? "border-line bg-paper text-steel"
-            : target.kind === "item"
-              ? itemAvailable !== null && itemAvailable >= quantity
-                ? "border-signal/30 bg-signal-light/30 text-navy"
-                : "border-amber/40 bg-amber/10 text-amber-deep"
-              : pkgBookable
-                ? "border-signal/30 bg-signal-light/30 text-navy"
-                : "border-amber/40 bg-amber/10 text-amber-deep"
-        }`}
+    <div>
+      <StepIndicator current={1} />
+      <form
+        onSubmit={handleContinueToDetails}
+        className="animate-fade-up flex flex-col gap-6 rounded-2xl border border-line bg-white p-7 shadow-sm"
       >
-        {checking && (
-          <span className="flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking availability…
-          </span>
-        )}
-        {!checking && target.kind === "item" && itemAvailable !== null && (
-          <span className="flex items-center gap-2">
-            {itemAvailable >= quantity && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-            <span>
-              {itemAvailable} of {target.maxQuantity} available for that pickup time.
-              {itemAvailable < quantity && " Not enough for the quantity requested."}
-            </span>
-          </span>
-        )}
-        {!checking && target.kind === "package" && pkgLines && (
-          <div>
-            <p className="flex items-center gap-2">
-              {pkgBookable && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-              {pkgBookable
-                ? "This package is available for that pickup time."
-                : "One or more components are unavailable for that pickup time:"}
-            </p>
-            {!pkgBookable && (
-              <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
-                {pkgLines
-                  .filter((l) => !l.ok)
-                  .map((l) => (
-                    <li key={l.itemId}>
-                      {l.itemName}: need {l.required}, only {l.available} free
-                    </li>
-                  ))}
-              </ul>
-            )}
-          </div>
-        )}
-      </div>
+        <div>
+          <h3 className="font-display text-lg font-semibold text-navy">
+            {target.kind === "item" ? target.itemName : target.packageName}
+          </h3>
+          <p className="mt-1 text-sm text-steel">Pick a pickup date and time to get started.</p>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className={labelClass}>
-          Name
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Phone
-          <input
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Organization
-          <input value={org} onChange={(e) => setOrg(e.target.value)} className={fieldClass} />
-        </label>
-        <label className={`${labelClass} col-span-2`}>
-          Event name
-          <input
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={`${labelClass} col-span-2`}>
-          Event address
-          <input
-            value={eventAddress}
-            onChange={(e) => setEventAddress(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className={`${labelClass} col-span-2`}>
-          Notes
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className={fieldClass}
-          />
-        </label>
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={labelClass}>
+            <FieldLabel icon={CalendarDays}>Pickup date</FieldLabel>
+            <input
+              type="date"
+              required
+              min={todayStr()}
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
+              className={fieldClass}
+            />
+          </label>
+          <label className={labelClass}>
+            <FieldLabel icon={Clock}>Pickup time</FieldLabel>
+            <input
+              type="time"
+              required
+              min={MIN_PICKUP_TIME}
+              max={MAX_PICKUP_TIME}
+              value={pickupTime}
+              onChange={(e) => setPickupTime(e.target.value)}
+              className={fieldClass}
+            />
+          </label>
+        </div>
 
-      {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+        <div className="rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+          Return due{" "}
+          <span className="font-semibold text-navy">{format(dropoffAtDate, "EEE, MMM d 'at' h:mm a")}</span>.
+          Returns after this time are billed for an additional day.
+        </div>
 
-      <button
-        type="submit"
-        disabled={!canSubmit || checking}
-        className="rounded-full bg-amber px-5 py-3.5 font-semibold text-amber-deep shadow-sm shadow-amber/30 transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-      >
-        Continue to review &amp; sign
-      </button>
-    </form>
+        <div className="flex items-start gap-2 rounded-lg border border-line bg-paper/50 px-4 py-3 text-sm text-steel">
+          <Truck className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
+          {fulfillmentType === "DELIVERY"
+            ? "We'll deliver this to your event address at the pickup time above."
+            : "You'll need to pick this up from our location — no delivery is included."}
+        </div>
+
+        {target.kind === "item" && (
+          <label className={labelClass}>
+            Quantity
+            <input
+              type="number"
+              min={1}
+              max={target.maxQuantity}
+              required
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className={`${fieldClass} w-24`}
+            />
+          </label>
+        )}
+
+        {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          className="flex items-center justify-center gap-1.5 rounded-full bg-navy px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+        >
+          Continue
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </form>
+    </div>
   );
 }

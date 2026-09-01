@@ -104,6 +104,48 @@ const itemDescriptions: Record<string, string> = {
   "Focusrite Scarlett 2i2 3rd Gen": "Recording or computer playback integration",
   "PDU Metered 120V 20A 5-15/20R 12-Outlet": "Safe, monitored power for the full rig",
   "PDU Metered 120V 30A 5-15/20R 12-Outlet": "Safe, monitored power for the full rig",
+
+  "3 Pin Male/Female Audio Mic Microphone Connector": "In-line XLR repair or extension connector",
+  "Furry Windscreen Muff for Behringer C-2 Mic": "Wind noise reduction for outdoor recording",
+  "JOYO 5.8Ghz Wireless XLR Microphone Transmitter Receiver":
+    "Cable-free mic signal for mobile presenters",
+  "Musou RCA Analog to Digital Optical Toslink Coaxial Audio Converter":
+    "Bridges analog gear to digital optical inputs",
+  "Professional Microphone Isolation Shield with Pop Filter":
+    "Cleaner vocal takes, less room reflection",
+  "Pyle Dual Studio Monitor Speaker Stand": "Elevates studio monitors to ear height",
+  "SmallRig Microphone Shock Mount for Behringer c-2 Mic":
+    "Isolates mic from stand vibration and handling noise",
+  'XLR Female to 1/4" TRS Adapter': 'Connects XLR mics to 1/4" TRS inputs',
+  'XLR Male to 1/4" TRS Adapter': 'Connects 1/4" TRS outputs to XLR inputs',
+
+  '3.5mm 1/8" TRS to Dual 6.35mm 1/4" TS Mono Stereo Y-Cable Splitter Cord':
+    'Splits a stereo mini output to dual mono 1/4" jacks',
+  "Amazon Basics 3.5 mm Male to Male Stereo Audio Cable, 8 Feet":
+    "Connects phones and laptops to speakers or mixers",
+  "Amazon Basics Standard XLR 25ft": "Standard mic and line-level runs up to 25 feet",
+  "Balanced XLR Splitter Cable - 1.5ft": "Short balanced splitter for tight rack runs",
+  "Cable Matters 2-Pack 1/4 Inch TS to TS": 'Instrument and line-level 1/4" connections',
+  "Cable Matters Dual XLR to RCA Cable 10 ft,": "Feeds mixer XLR outputs into RCA inputs",
+  'CPR-202 Dual 1/4" TS to Dual RCA Stereo': 'Stereo 1/4" to RCA interconnect for short runs',
+  'CPR-202 Dual 1/4" TS to Dual RCA Stereo Interconnect Cable 2 Meteres':
+    'Stereo 1/4" to RCA interconnect, 2-meter run',
+  "Dual RCA to XLR Cable, Dual RCA Male to Dual XLR Male, 10ft":
+    "Feeds RCA sources into balanced XLR inputs",
+  "Dual RCA to XLR Unbalanced Interconnect Cable": "Short RCA-to-XLR run for consumer gear",
+  "Dual RCA to XLR Unbalanced Interconnect Cable - 10ft":
+    "Longer RCA-to-XLR run for consumer gear",
+  "EBXYA XLR Cable 20ft": "Standard mic and line-level runs up to 20 feet",
+  "EBXYA XLR Cables 3ft": "Short balanced runs between rack gear",
+  "Gearlux XLR Microphone Cable, 100 Feet": "Long balanced run for stage-to-mixer distances",
+  "XLR Splitter, Balanced XLR Splitter Cable Male to 2 Female":
+    "Feeds one XLR source to two destinations",
+
+  "BEHRINGER ECM8000": "Measurement mic for room and system tuning",
+  "Behringer mx8500": "Affordable dynamic mic for live vocals",
+  "JLab Talk USB Microphone": "Plug-and-play USB mic for streaming or voiceover",
+  "Sanken CS-2": "Shotgun mic for focused dialogue pickup",
+  "Sony ECM-778": "Compact lavalier mic for interviews and presenters",
 };
 
 async function main() {

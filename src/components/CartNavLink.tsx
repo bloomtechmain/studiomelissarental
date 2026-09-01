@@ -11,12 +11,12 @@ export default function CartNavLink() {
     <Link
       href="/cart"
       title="Cart"
-      className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-navy shadow-sm transition hover:-translate-y-0.5 hover:border-signal/60 hover:text-signal hover:shadow-md"
+      className="relative flex h-9 w-9 items-center justify-center text-white/85 transition hover:text-amber"
     >
-      <ShoppingCart className="h-4 w-4" strokeWidth={2.25} />
+      <ShoppingCart className="h-[19px] w-[19px]" strokeWidth={2} />
       <span className="sr-only">Cart</span>
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber px-1 text-[11px] font-bold text-amber-deep">
+        <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber px-1 text-[10px] font-bold text-amber-deep">
           {count}
         </span>
       )}

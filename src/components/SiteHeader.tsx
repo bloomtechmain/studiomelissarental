@@ -16,7 +16,7 @@ import CartNavLink from "@/components/CartNavLink";
 
 const NAV_LINKS = [
   { href: "/services", label: "Services", icon: Package },
-  { href: "/products", label: "Items for rent", icon: Volume2 },
+  { href: "/items-for-rent", label: "Items for rent", icon: Volume2 },
   { href: "/quote", label: "Request a quote", icon: MessageSquareText },
   { href: "/contact", label: "Contact", icon: Mail },
 ];

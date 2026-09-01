@@ -18,8 +18,8 @@ export async function generateMetadata({
   if (!category) return {};
   return {
     title: `${category.name} Rental — Items for Rent`,
-    description: `Rent ${category.name.toLowerCase()} à la carte with real-time availability. Pay online and pick up or arrange delivery in Greater Austin.`,
-    alternates: { canonical: `/products/${id}` },
+    description: `Rent ${category.name.toLowerCase()} à la carte with real-time availability. Pay online and pick up from our Pflugerville location — self pickup only.`,
+    alternates: { canonical: `/items-for-rent/${id}` },
   };
 }
 
@@ -42,7 +42,7 @@ export default async function ProductCategoryPage({ params }: { params: Promise<
   return (
     <div className="mx-auto max-w-5xl px-6 py-14">
       <Link
-        href="/products"
+        href="/items-for-rent"
         className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
       >
         <ChevronLeft className="h-4 w-4" /> Items for rent

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Items for Rent — À La Carte Audio Equipment",
   description:
     "Rent individual PA speakers, microphones, mixers, subwoofers, and cables à la carte with real-time availability. Pay online and pick up from our Pflugerville location — no delivery on individual item rentals.",
-  alternates: { canonical: "/products" },
+  alternates: { canonical: "/items-for-rent" },
 };
 
 export default async function ProductsPage() {
@@ -74,7 +74,7 @@ export default async function ProductsPage() {
             return (
               <Link
                 key={cat.id}
-                href={`/products/${cat.id}`}
+                href={`/items-for-rent/${cat.id}`}
                 className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 <div className="relative aspect-[4/3] overflow-hidden">

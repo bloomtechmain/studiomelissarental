@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getCustomerSession } from "@/lib/customerAuth";
@@ -62,13 +63,13 @@ export default async function AccountDashboardPage() {
         {bookings.length === 0 && (
           <p className="rounded-2xl border border-line bg-white p-6 text-steel">
             No rentals yet — browse our{" "}
-            <a href="/services" className="font-semibold text-signal hover:underline">
+            <Link href="/services" className="font-semibold text-signal hover:underline">
               services
-            </a>{" "}
+            </Link>{" "}
             or{" "}
-            <a href="/products" className="font-semibold text-signal hover:underline">
-              products
-            </a>{" "}
+            <Link href="/items-for-rent" className="font-semibold text-signal hover:underline">
+              items for rent
+            </Link>{" "}
             to get started.
           </p>
         )}

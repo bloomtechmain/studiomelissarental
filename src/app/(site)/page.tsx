@@ -287,7 +287,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/products"
+              href="/items-for-rent"
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-1 hover:border-signal/40 hover:shadow-xl"
             >
               <div className="relative aspect-[16/10] overflow-hidden">

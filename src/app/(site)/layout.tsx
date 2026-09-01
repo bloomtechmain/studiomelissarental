@@ -42,7 +42,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               </li>
               <li>
                 <Link
-                  href="/products"
+                  href="/items-for-rent"
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
                   Items for rent

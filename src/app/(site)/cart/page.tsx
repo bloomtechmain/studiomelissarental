@@ -251,7 +251,7 @@ export default function CartPage() {
         <h1 className="mt-5 font-display text-2xl font-semibold text-navy">Your cart is empty</h1>
         <p className="mt-2 text-steel">Browse the equipment catalog and add what you need.</p>
         <Link
-          href="/products"
+          href="/items-for-rent"
           className="mt-6 inline-flex items-center rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white hover:brightness-110"
         >
           Browse equipment
@@ -360,7 +360,7 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-14">
       <Link
-        href="/products"
+        href="/items-for-rent"
         className="inline-flex items-center gap-1 text-sm font-semibold text-steel transition hover:text-signal"
       >
         <ChevronLeft className="h-4 w-4" /> Keep browsing

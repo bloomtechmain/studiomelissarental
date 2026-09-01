@@ -15,7 +15,7 @@ or delivery.
 
 - [Home](https://studiomelissarental.com/): Overview of the business, how booking works, and service area.
 - [Services](https://studiomelissarental.com/services): Four fixed-price event packages (Backyard, Gathering, Hall, Field), sized by guest count, each listing included equipment.
-- [Items for rent](https://studiomelissarental.com/products): À la carte equipment catalog grouped by category (Accessories, Cable, Microphones, Mixer, Mixing / DSP, Power Conditioner, Powered Speakers, Powered Subwoofer), with real-time stock and online checkout.
+- [Items for rent](https://studiomelissarental.com/items-for-rent): À la carte equipment catalog grouped by category (Accessories, Cable, Microphones, Mixer, Mixing / DSP, Power Conditioner, Powered Speakers, Powered Subwoofer), with real-time stock and online checkout.
 - [Request a quote](https://studiomelissarental.com/quote): Custom quote request form for events that don't fit a standard package.
 - [Contact](https://studiomelissarental.com/contact): Phone, email, service-area map, and a general contact form.
 

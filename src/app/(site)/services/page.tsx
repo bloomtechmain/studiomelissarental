@@ -158,18 +158,11 @@ export default async function ServicesPage() {
                   <p className="mt-1 text-sm leading-relaxed text-navy/80">{pkg.description}</p>
                 </div>
 
-                <ul className="mt-4 divide-y divide-line/70">
-                  {pkg.components.map((c) => (
-                    <li key={c.id} className="flex items-center gap-3 py-2 first:pt-0">
-                      <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-signal-light/40 px-1.5 font-display text-xs font-bold text-signal">
-                        {c.quantity}×
-                      </span>
-                      <span className="text-sm leading-snug text-navy/85">{c.item.name}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-auto border-t border-line pt-5">
+                <div
+                  className={`border-t border-line pt-5 ${
+                    pkg.tier === 4 ? "mt-6" : "mt-auto"
+                  }`}
+                >
                   {pkg.tier === 4 ? (
                     <p className="font-display text-lg font-semibold text-navy">Custom quote</p>
                   ) : (
@@ -181,7 +174,11 @@ export default async function ServicesPage() {
                     </p>
                   )}
                   {meta && (
-                    <p className="mt-1 min-h-[2.25rem] text-xs leading-snug text-steel">
+                    <p
+                      className={`mt-1 min-h-[2.25rem] text-xs leading-snug text-steel ${
+                        pkg.tier === 4 ? "line-clamp-2" : ""
+                      }`}
+                    >
                       {meta.note}
                     </p>
                   )}

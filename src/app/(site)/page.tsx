@@ -304,12 +304,12 @@ export default function HomePage() {
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-8">
-                <h3 className="font-display text-2xl font-semibold text-navy">Products</h3>
+                <h3 className="font-display text-2xl font-semibold text-navy">Items for rent</h3>
                 <p className="mt-2 max-w-xs text-steel">
                   Individual equipment for your own build — pick it up from us.
                 </p>
                 <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-full border border-line bg-paper px-4 py-2 text-sm font-semibold text-navy transition group-hover:border-signal group-hover:text-signal">
-                  View products
+                  View items
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </div>

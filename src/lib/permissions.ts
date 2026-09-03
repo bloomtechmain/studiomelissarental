@@ -20,7 +20,7 @@ export type Permission =
   | "settings:view"
   | "settings:write"
   | "staff:manage" // view + edit staff accounts
-  | "reports:view";
+  | "accounting:view"; // income tiles/graphs — owner only, not general staff
 
 // The single source of truth for what each role can do. To add a new role,
 // add one entry here — every server action and page checks this table, so
@@ -41,7 +41,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "settings:view",
     "settings:write",
     "staff:manage",
-    "reports:view",
+    "accounting:view",
   ],
   // Staff — Bookings: create/edit bookings, manage customers, view inventory
   // availability. Cannot edit staff accounts or view financial reports.

@@ -16,6 +16,7 @@ import {
   BarChart3,
   Grid3x3,
   UserCog,
+  PiggyBank,
 } from "lucide-react";
 
 // `permission` is omitted for items every logged-in role can view (they're
@@ -31,7 +32,13 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; permissi
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/addons", label: "Add-ons", icon: Tag },
   { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3, permission: "reports:view" },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
+  {
+    href: "/admin/accounting",
+    label: "Accounting",
+    icon: PiggyBank,
+    permission: "accounting:view",
+  },
   { href: "/admin/staff", label: "Staff", icon: UserCog, permission: "staff:manage" },
   { href: "/admin/settings", label: "Settings", icon: Settings, permission: "settings:view" },
 ];

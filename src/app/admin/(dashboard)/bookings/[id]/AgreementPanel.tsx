@@ -118,7 +118,7 @@ export default function AgreementPanel({
               />
             )}
           </div>
-          <p className="mt-2 text-xs text-steel">
+          <p className="mt-2 text-xs text-steel break-all">
             Verified:{" "}
             {decryptedSignature ? (
               <span className="font-mono text-navy">{decryptedSignature}</span>

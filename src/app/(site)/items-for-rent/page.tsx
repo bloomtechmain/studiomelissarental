@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { iconForCategory, imageForCategory } from "@/lib/categoryIcons";
+import ItemsForRentShell from "@/components/ItemsForRentShell";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,7 @@ export default async function ProductsPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-6 py-12">
+       <ItemsForRentShell>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {activeCategories.map((cat) => {
             const Icon = iconForCategory(cat.name);
@@ -111,6 +113,7 @@ export default async function ProductsPage() {
             No equipment categories are available right now.
           </p>
         )}
+       </ItemsForRentShell>
       </div>
     </div>
   );

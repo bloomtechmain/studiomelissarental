@@ -2,13 +2,11 @@ import Link from "next/link";
 import { Volume2, MapPin, ChevronRight } from "lucide-react";
 import { CartProvider } from "@/components/CartProvider";
 import SiteHeader from "@/components/SiteHeader";
-import FloatingCart from "@/components/FloatingCart";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider>
       <SiteHeader />
-      <FloatingCart />
 
       <main className="flex-1">{children}</main>
 

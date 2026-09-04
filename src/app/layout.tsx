@@ -62,7 +62,12 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
-  icons: { icon: "/favicon.ico" },
+  // No explicit `icons` field — favicon.ico/icon.png/apple-icon.png under
+  // src/app/ are Next.js's file-convention icons and get wired up (and
+  // auto-optimized) automatically. An explicit `icons` here would override
+  // that instead of layering with it, and previously pointed at a
+  // /favicon.ico that didn't exist in /public — real bug, the browser tab
+  // was silently falling back to the unreplaced default Next.js icon.
 };
 
 const localBusinessJsonLd = {
@@ -94,7 +99,7 @@ const localBusinessJsonLd = {
     "Dripping Springs",
     "Pflugerville",
   ].map((name) => ({ "@type": "City", name })),
-  sameAs: [],
+  sameAs: ["https://www.facebook.com/profile.php?id=61593839501124"],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

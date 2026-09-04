@@ -43,14 +43,16 @@ const contactCards = [
     label: "Phone",
     value: PHONE_DISPLAY,
     href: PHONE_HREF,
-    nowrap: true,
   },
   {
     icon: Mail,
     label: "Email",
     value: EMAIL,
     href: `mailto:${EMAIL}`,
-    nowrap: true,
+    // Wider card so the full address fits on one line instead of wrapping
+    // or getting clipped — the 3-column grid below gives each card too
+    // little room otherwise (Phone + wide Email fill row 1 exactly).
+    wide: true,
   },
   {
     icon: MapPin,
@@ -115,7 +117,7 @@ export default function ContactPage() {
                   card.href
                     ? "hover:-translate-y-1 hover:border-signal/50 hover:shadow-lg hover:shadow-signal/10"
                     : ""
-                }`}
+                } ${card.wide ? "sm:col-span-2" : ""}`}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-signal-light/40 text-signal transition group-hover:bg-amber/20 group-hover:text-amber-deep">
                   <card.icon className="h-5 w-5" strokeWidth={2.25} />
@@ -123,11 +125,7 @@ export default function ContactPage() {
                 <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-steel">
                   {card.label}
                 </p>
-                <p
-                  className={`mt-1 text-base font-semibold text-navy ${card.nowrap ? "overflow-x-auto whitespace-nowrap" : ""}`}
-                >
-                  {card.value}
-                </p>
+                <p className="mt-1 text-base font-semibold break-words text-navy">{card.value}</p>
               </Wrapper>
             );
           })}

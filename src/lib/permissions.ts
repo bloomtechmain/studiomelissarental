@@ -17,6 +17,7 @@ export type Permission =
   | "inventory:catalog:write" // categories, items, pricing
   | "packages:write" // package composition & pricing
   | "addons:write"
+  | "gallery:write" // upload/remove public gallery photos
   | "settings:view"
   | "settings:write"
   | "staff:manage" // view + edit staff accounts
@@ -38,6 +39,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "inventory:catalog:write",
     "packages:write",
     "addons:write",
+    "gallery:write",
     "settings:view",
     "settings:write",
     "staff:manage",

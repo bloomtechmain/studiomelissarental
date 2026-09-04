@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Volume2, MapPin, ChevronRight } from "lucide-react";
 import { CartProvider } from "@/components/CartProvider";
 import SiteHeader from "@/components/SiteHeader";
+import MobileCartBar from "@/components/MobileCartBar";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <SiteHeader />
 
       <main className="flex-1">{children}</main>
+
+      <MobileCartBar />
 
       <footer className="bg-dot-grid-dark relative overflow-hidden border-t border-line bg-navy-dark text-signal-light">
         <div className="relative mx-auto grid max-w-6xl gap-12 px-6 py-16 sm:grid-cols-[1.3fr_1fr]">
@@ -46,6 +49,15 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                   className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
                 >
                   Items for rent
+                  <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/gallery"
+                  className="group inline-flex items-center gap-1 text-signal-light/85 transition hover:text-white"
+                >
+                  Gallery
                   <ChevronRight className="h-3.5 w-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </Link>
               </li>

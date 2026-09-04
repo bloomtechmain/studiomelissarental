@@ -7,7 +7,13 @@ import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/lib/permissions";
 import { setGlobalBufferHours, setBookingFeePercent, getBookingFeePercent } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
-import { saveAgreementFile, saveItemPhoto, saveCompanySignature } from "@/lib/uploads";
+import {
+  saveAgreementFile,
+  saveItemPhoto,
+  saveCompanySignature,
+  saveGalleryPhoto,
+  deleteGalleryPhoto,
+} from "@/lib/uploads";
 import { readPngDimensions } from "@/lib/png";
 import { assignUnits, getAvailability, InsufficientAvailabilityError } from "@/lib/availability";
 import { BookingConflictError } from "@/lib/booking";
@@ -956,4 +962,85 @@ export async function deleteStaffUser(userId: string) {
   }
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin/staff");
+}
+
+// --- Gallery ---------------------------------------------------------------
+
+// Phone-camera photos routinely land in the 8-15MB range, so the old 8MB cap
+// silently rejected a chunk of otherwise-normal uploads. 20MB gives real
+// headroom while staying comfortably under the 32MB total body limit
+// configured in next.config.ts (which has to fit an entire multi-file batch,
+// not just one photo).
+const MAX_GALLERY_PHOTO_BYTES = 20 * 1024 * 1024;
+
+// Server Actions redact thrown error messages once deployed (see
+// updateBookingStatus above), so — same as that gate — validation failures
+// here are communicated via a return value the client can display, not by
+// throwing, otherwise production would only ever show a generic fallback.
+export type UploadGalleryImagesResult = { ok: true } | { ok: false; error: string };
+
+export async function uploadGalleryImages(formData: FormData): Promise<UploadGalleryImagesResult> {
+  const session = await requireSession();
+  requirePermission(session, "gallery:write");
+
+  const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  if (files.length === 0) {
+    return { ok: false, error: "No files provided." };
+  }
+  const oversized = files.filter((f) => f.size > MAX_GALLERY_PHOTO_BYTES);
+  if (oversized.length > 0) {
+    const names = oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join(", ");
+    return { ok: false, error: `Too large for the 20MB limit: ${names}` };
+  }
+
+  const last = await prisma.galleryImage.findFirst({ orderBy: { sortOrder: "desc" } });
+  let nextOrder = (last?.sortOrder ?? -1) + 1;
+
+  for (const file of files) {
+    const { url } = await saveGalleryPhoto(file);
+    await prisma.galleryImage.create({ data: { imageUrl: url, sortOrder: nextOrder } });
+    nextOrder += 1;
+  }
+
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
+  return { ok: true };
+}
+
+export async function deleteGalleryImage(id: string) {
+  const session = await requireSession();
+  requirePermission(session, "gallery:write");
+
+  const image = await prisma.galleryImage.delete({ where: { id } });
+  const storedName = image.imageUrl.split("/").pop();
+  if (storedName) {
+    await deleteGalleryPhoto(storedName).catch(() => {});
+  }
+
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
+}
+
+// `orderedIds` is the full list of gallery image ids in the order the admin
+// dragged them into — sortOrder is just each id's index in that list.
+export async function reorderGalleryImages(orderedIds: string[]) {
+  const session = await requireSession();
+  requirePermission(session, "gallery:write");
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.galleryImage.update({ where: { id }, data: { sortOrder: index } })
+    )
+  );
+
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
+}
+
+export async function updateGalleryImageCaption(id: string, caption: string) {
+  const session = await requireSession();
+  requirePermission(session, "gallery:write");
+  await prisma.galleryImage.update({ where: { id }, data: { caption: caption || null } });
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
 }

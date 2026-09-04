@@ -17,6 +17,7 @@ import {
   Grid3x3,
   UserCog,
   PiggyBank,
+  Images,
 } from "lucide-react";
 
 // `permission` is omitted for items every logged-in role can view (they're
@@ -31,6 +32,12 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; permissi
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/addons", label: "Add-ons", icon: Tag },
+  {
+    href: "/admin/gallery",
+    label: "Gallery",
+    icon: Images,
+    permission: "gallery:write",
+  },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   {

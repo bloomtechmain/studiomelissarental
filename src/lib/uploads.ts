@@ -63,6 +63,41 @@ export async function readItemPhoto(storedName: string): Promise<Buffer> {
   return fs.readFile(filePath);
 }
 
+// Public gallery photos — same public/unauthenticated serving pattern as
+// item photos, via /api/gallery/photos/[filename].
+const GALLERY_PHOTOS_DIR = path.join(process.cwd(), "uploads", "gallery");
+
+export async function saveGalleryPhoto(file: File): Promise<{ url: string }> {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Unsupported image type — use JPEG, PNG, WebP, or GIF.");
+  }
+  await fs.mkdir(GALLERY_PHOTOS_DIR, { recursive: true });
+
+  const ext = path.extname(file.name) || ".jpg";
+  const storedName = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(path.join(GALLERY_PHOTOS_DIR, storedName), buffer);
+
+  return { url: `/api/gallery/photos/${storedName}` };
+}
+
+export async function readGalleryPhoto(storedName: string): Promise<Buffer> {
+  const filePath = path.join(GALLERY_PHOTOS_DIR, storedName);
+  if (!filePath.startsWith(GALLERY_PHOTOS_DIR)) {
+    throw new Error("Invalid file path.");
+  }
+  return fs.readFile(filePath);
+}
+
+export async function deleteGalleryPhoto(storedName: string): Promise<void> {
+  const filePath = path.join(GALLERY_PHOTOS_DIR, storedName);
+  if (!filePath.startsWith(GALLERY_PHOTOS_DIR)) {
+    throw new Error("Invalid file path.");
+  }
+  await fs.rm(filePath, { force: true });
+}
+
 // Signature images from customer submissions made before the upload step
 // was removed — kept outside /public, served only via the authenticated
 // /api/admin/files/signatures/[filename] route, so old records still load.

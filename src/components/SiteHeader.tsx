@@ -11,12 +11,14 @@ import {
   User,
   Menu,
   X,
+  Images,
 } from "lucide-react";
 import CartNavLink from "@/components/CartNavLink";
 
 const NAV_LINKS = [
   { href: "/services", label: "Services", icon: Package },
   { href: "/items-for-rent", label: "Items for rent", icon: Volume2 },
+  { href: "/gallery", label: "Gallery", icon: Images },
   { href: "/quote", label: "Request a quote", icon: MessageSquareText },
   { href: "/contact", label: "Contact", icon: Mail },
 ];

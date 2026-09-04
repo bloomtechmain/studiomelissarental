@@ -347,6 +347,20 @@ model Setting {
   value String
 }
 
+// Public-facing photo gallery (event setups, equipment in action, etc.),
+// managed by staff in the admin dashboard and rendered on the public
+// /gallery page. Deliberately flat — no categories/tags — since the site
+// only needs a single scrollable showcase for now.
+model GalleryImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([sortOrder])
+}
+
 // --- Lead / CRM pipeline -----------------------------------------------
 // New Lead -> Contacted -> Quote Sent -> Booking Confirmed -> Completed,
 // with a Lost/Declined branch. Separate from Customer: a Lead is a

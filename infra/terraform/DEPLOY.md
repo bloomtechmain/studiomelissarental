@@ -139,6 +139,14 @@ Then configure Nginx as a reverse proxy from port 80 to the app's port
 ```bash
 sudo nano /etc/nginx/sites-available/default
 # proxy_pass http://localhost:3000; inside the location / block
+#
+# Also add `client_max_body_size 25m;` in the `server {}` block (next to
+# `server_name _;`) — nginx defaults to 1MB, which silently 413s any photo
+# upload over that (gallery photos, item photos, signed agreements) before
+# it ever reaches the app, regardless of the app's own upload limits. Fixed
+# by hand on the live server on 2026-09-04 after gallery uploads over ~1MB
+# were failing; a server rebuild starts from nginx's default again, so this
+# has to be reapplied — it won't happen automatically.
 sudo nginx -t && sudo systemctl reload nginx
 ```
 

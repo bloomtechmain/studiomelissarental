@@ -103,7 +103,7 @@ export default function ContactPage() {
       </section>
 
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           {contactCards.map((card) => {
             const Wrapper = card.href ? "a" : "div";
             return (

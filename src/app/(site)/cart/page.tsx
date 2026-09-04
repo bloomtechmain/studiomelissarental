@@ -376,9 +376,9 @@ export default function CartPage() {
             return (
               <div
                 key={line.itemId}
-                className="flex items-center gap-4 rounded-xl border border-line bg-white p-4 shadow-sm"
+                className="flex flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4"
               >
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-navy">{line.name}</p>
                   <p className="text-sm text-steel">
                     ${line.dailyRate.toFixed(0)} / rental
@@ -399,33 +399,35 @@ export default function CartPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center rounded-full border border-line">
+                <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end sm:gap-4">
+                  <div className="flex items-center rounded-full border border-line">
+                    <button
+                      type="button"
+                      onClick={() => cart.updateQuantity(line.itemId, line.quantity - 1)}
+                      className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-6 text-center text-sm font-semibold text-navy">
+                      {line.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementLine(line)}
+                      className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => cart.updateQuantity(line.itemId, line.quantity - 1)}
-                    className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
+                    onClick={() => cart.removeItem(line.itemId)}
+                    aria-label={`Remove ${line.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-steel hover:bg-red-50 hover:text-red-600"
                   >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <span className="w-6 text-center text-sm font-semibold text-navy">
-                    {line.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleIncrementLine(line)}
-                    className="flex h-8 w-8 items-center justify-center text-steel hover:text-navy"
-                  >
-                    <Plus className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => cart.removeItem(line.itemId)}
-                  aria-label={`Remove ${line.name}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-steel hover:bg-red-50 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
               </div>
             );
           })}

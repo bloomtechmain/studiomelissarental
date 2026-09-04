@@ -38,9 +38,14 @@ function todayStr() {
   ).padStart(2, "0")}`;
 }
 
+// `w-full min-w-0` matters more here than on other forms — native
+// date/time inputs (Pickup date/time below) don't reliably shrink to fit
+// a flex/grid track on their own; without it, some mobile browsers render
+// them at their native intrinsic width and force the whole page to
+// overflow horizontally instead of wrapping within its column.
 const fieldClass =
-  "rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
-const labelClass = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+  "w-full min-w-0 rounded-lg border border-line bg-white px-3.5 py-2.5 text-navy transition focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15";
+const labelClass = "flex min-w-0 flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function CartPage() {
   const cart = useCart();
